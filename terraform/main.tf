@@ -107,7 +107,7 @@ resource "azurerm_container_group" "jmeter_slaves" {
     commands = [
       "/bin/sh",
       "-c",
-      "cp /jmeter/* .; /entrypoint.sh -s -J server.rmi.ssl.disable=true",
+      "cp -r /jmeter/* .; /entrypoint.sh -s -J server.rmi.ssl.disable=true",
     ]
   }
 }

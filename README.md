@@ -2,6 +2,7 @@
 page_type: sample
 languages:
 - yaml
+- python
 products:
 - azure
 - azure-devops
