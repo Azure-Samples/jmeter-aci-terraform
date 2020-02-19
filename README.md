@@ -9,11 +9,12 @@ products:
 - azure-storage
 extensions:
 - services: Containerinstance
+name: Load Testing Pipeline with JMeter, ACI and Terraform
 description: "Azure Pipeline that provisions JMeter on Azure Container Instance using Terraform for load testing scenarios"
 urlFragment: "jmeter-aci-terraform"
 ---
 
-# Load Testing Pipeline: JMeter, ACI and Terraform
+# Load Testing Pipeline with JMeter, ACI and Terraform
 
 This project is a load testing pipeline that leverages [Apache JMeter](https://jmeter.apache.org/) as an open source load and performance testing tool and [Terraform](https://www.terraform.io/) to dynamically provision and destroy the required infrastructure on Azure. 
 
