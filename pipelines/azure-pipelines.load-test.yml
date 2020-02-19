@@ -1,0 +1,108 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-18.04'
+
+variables:
+- group: JMETER_AZURE_PRINCIPAL
+- group: JMETER_TERRAFORM_SETTINGS
+- name: JMETER_DIRECTORY_INPUT
+  value: $(System.DefaultWorkingDirectory)/jmeter
+- name: JMETER_DIRECTORY_OUTPUT
+  value: $(System.DefaultWorkingDirectory)/results
+
+steps:
+
+- script: |
+    az login --service-principal --username $(ARM_CLIENT_ID) --password $(ARM_CLIENT_SECRET) --tenant $(ARM_TENANT_ID)
+    az account set --subscription $(ARM_SUBSCRIPTION_ID)
+  displayName: 'SETUP: Login on Azure CLI'
+
+- script: |
+    az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME)
+    docker pull $(TF_VAR_JMETER_DOCKER_IMAGE)
+  displayName: 'SETUP: Validate JMeter Docker Image'
+
+- script: |
+    docker run --name=jmx-validator -v $(JMETER_DIRECTORY_INPUT):/jmeter -w /jmeter \
+      --entrypoint "TestPlanCheck.sh" $(TF_VAR_JMETER_DOCKER_IMAGE) \
+      --stats --tree-dump --jmx $(TF_VAR_JMETER_JMX_FILE)
+  displayName: 'SETUP: Validate JMX File'
+
+- script: terraform init
+  workingDirectory: ./terraform
+  displayName: 'SETUP: Run Terraform Init'
+
+- script: terraform apply -target azurerm_storage_share.jmeter_share -auto-approve
+  workingDirectory: ./terraform
+  env:
+    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD)
+  displayName: 'SETUP: Run Terraform Apply (target=file share)'
+
+- script: |
+    azcopy \
+    --source $(JMETER_DIRECTORY_INPUT) \
+    --destination $(terraform output storage_file_share_url) \
+    --dest-key $(terraform output storage_account_key) \
+    --recursive
+  workingDirectory: ./terraform
+  displayName: 'SETUP: Transfer JMeter Files to Storage Account'
+
+- script: terraform apply -auto-approve
+  workingDirectory: ./terraform
+  env:
+    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD)
+  displayName: 'SETUP: Run Terraform Apply (target=all)'
+
+- script: |
+    RG=$(terraform output resource_group_name)
+    NAME=$(terraform output jmeter_master_name)
+    echo "`date`: Started!"
+    while [ $(az container show -g $RG -n $NAME --query "containers[0].instanceView.currentState.state" -o tsv) == "Running" ]; do
+      echo "`date`: Still Running..."
+      sleep 20
+    done
+    echo "`date`: Finished!"
+  workingDirectory: ./terraform
+  displayName: 'TEST: Wait Test Execution'
+
+- script: az container logs -g $(terraform output resource_group_name) -n $(terraform output jmeter_master_name)
+  workingDirectory: ./terraform
+  displayName: 'RESULTS: Show JMeter Master Logs'
+
+- script: |
+    azcopy \
+      --source $(terraform output storage_file_share_url) \
+      --destination $(JMETER_DIRECTORY_OUTPUT) \
+      --source-key $(terraform output storage_account_key) \
+      --recursive
+  workingDirectory: ./terraform
+  displayName: 'RESULTS: Get JMeter Artifacts'
+
+- script: |
+    JMETER_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/$(terraform output jmeter_results_file)
+    JUNIT_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/output.xml
+    python3 ../scripts/jtl_junit_converter.py $JMETER_RESULTS $JUNIT_RESULTS
+  workingDirectory: ./terraform
+  displayName: 'RESULTS: Convert JMeter Results to JUnit Format'
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '$(JMETER_DIRECTORY_OUTPUT)/output.xml'
+    failTaskOnFailedTests: true
+  displayName: 'RESULTS: Publish Load Testing Results'
+
+- publish: $(JMETER_DIRECTORY_OUTPUT)
+  artifact: JMeterResults
+  displayName: 'RESULTS: Publish Load Test Artifacts'
+
+- script: terraform destroy -auto-approve
+  workingDirectory: ./terraform
+  condition: succeededOrFailed()
+  env:
+    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD)
+  displayName: 'TEARDOWN: Run Terraform Destroy'

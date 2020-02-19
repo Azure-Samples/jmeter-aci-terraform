@@ -1,0 +1,36 @@
+# JMeter Pipeline Settings
+
+The pipeline uses Terraform 12.x to provision JMeter and its infrastructure on Azure.
+
+All environment variables that start with the prefix `TF_VAR` can be used by Terraform to fill the template. According to the [official docs](https://www.terraform.io/docs/commands/environment-variables.html#tf_var_name):
+
+> Environment variables can be used to set variables. The environment variables must be in the format TF_VAR_name and this will be checked last for a value.
+
+There are 2 variables that can be set directly on the JMeter pipeline. Those are:
+
+| Environment Variable       | Terraform Variable  | Default Value |
+|----------------------------|---------------------|---------------|
+| TF_VAR_JMETER_JMX_FILE     | JMETER_JMX_FILE     |               |
+| TF_VAR_JMETER_SLAVES_COUNT | JMETER_SLAVES_COUNT |       1       |
+
+All the other variables can be set on a library group called `JMETER_TERRAFORM_SETTINGS`. If a variable is not present on that library, a default value will be used, as the following table shows:
+
+| Environment Variable                  | Terraform Variable             | Default Value       |
+|---------------------------------------|--------------------------------|---------------------|
+| TF_VAR_RESOURCE_GROUP_NAME            | RESOURCE_GROUP_NAME            |        jmeter       |
+| TF_VAR_LOCATION                       | LOCATION                       |        eastus       |
+| TF_VAR_PREFIX                         | PREFIX                         |        jmeter       |
+| TF_VAR_VNET_ADDRESS_SPACE             | VNET_ADDRESS_SPACE             |     10.0.0.0/16     |
+| TF_VAR_SUBNET_ADDRESS_PREFIX          | SUBNET_ADDRESS_PREFIX          |     10.0.0.0/24     |
+| TF_VAR_JMETER_SLAVE_CPU               | JMETER_SLAVE_CPU               |         2.0         |
+| TF_VAR_JMETER_SLAVE_MEMORY            | JMETER_SLAVE_MEMORY            |         8.0         |
+| TF_VAR_JMETER_MASTER_CPU              | JMETER_MASTER_CPU              |         2.0         |
+| TF_VAR_JMETER_MASTER_MEMORY           | JMETER_MASTER_MEMORY           |         8.0         |
+| TF_VAR_JMETER_DOCKER_IMAGE            | JMETER_DOCKER_IMAGE            | justb4/jmeter:5.1.1 |
+| TF_VAR_JMETER_DOCKER_PORT             | JMETER_DOCKER_PORT             |         1099        |
+| TF_VAR_JMETER_IMAGE_REGISTRY_SERVER   | JMETER_IMAGE_REGISTRY_SERVER   |                     |
+| TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME | JMETER_IMAGE_REGISTRY_USERNAME |                     |
+| TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD | JMETER_IMAGE_REGISTRY_PASSWORD |                     |
+| TF_VAR_JMETER_STORAGE_QUOTA_GIGABYTES | JMETER_STORAGE_QUOTA_GIGABYTES |          1          |
+| TF_VAR_JMETER_RESULTS_FILE            | JMETER_RESULTS_FILE            |     results.jtl     |
+| TF_VAR_JMETER_DASHBOARD_FOLDER        | JMETER_DASHBOARD_FOLDER        |      dashboard      |

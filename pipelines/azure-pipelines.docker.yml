@@ -1,0 +1,24 @@
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - docker/*
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: JMETER_AZURE_PRINCIPAL
+- group: JMETER_TERRAFORM_SETTINGS
+
+steps:
+- script: |
+    az login --service-principal --username $(ARM_CLIENT_ID) --password $(ARM_CLIENT_SECRET) --tenant $(ARM_TENANT_ID)
+    az account set --subscription $(ARM_SUBSCRIPTION_ID)
+  displayName: 'Login on Azure CLI'
+
+- script: |
+    az acr build -t $(TF_VAR_JMETER_DOCKER_IMAGE) -r $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -f $(Build.SourcesDirectory)/docker/Dockerfile .
+  displayName: 'Build and Push JMeter Docker image'
