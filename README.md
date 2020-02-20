@@ -145,7 +145,16 @@ az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR
 az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_SLAVES_COUNT --allow-override
 ```
 
-### 5. Manually Run the JMeter Pipeline
+### 5. Update the target web service (optional)
+
+By default, this repository uses `azure.microsoft.com:443` as the target web service. If you want to change it to target a different web service endpoint, open the `sample.jmx` file located on `jmeter` folder.
+
+```xml
+<stringProp name="HTTPSampler.domain">azure.microsoft.com</stringProp>
+<stringProp name="HTTPSampler.port">443</stringProp>
+```
+
+### 6. Manually Run the JMeter Pipeline
 
 You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmeter/sample.jmx)) and how many JMeter slaves you will need for your test. Then you can run the JMeter pipeline using the CLI:
 
