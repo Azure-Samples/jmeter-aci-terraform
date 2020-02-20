@@ -73,6 +73,12 @@ steps:
   displayName: 'RESULTS: Show JMeter Master Logs'
 
 - script: |
+    RESOURCE_GROUP=$(terraform output resource_group_name)
+    echo -n $(terraform output jmeter_slaves_names) | xargs -t -d "," -I '{}' -n1 az container logs -g $RESOURCE_GROUP -n {} 
+  workingDirectory: ./terraform
+  displayName: 'RESULTS: Show JMeter Slaves Logs'
+
+- script: |
     azcopy \
       --source $(terraform output storage_file_share_url) \
       --destination $(JMETER_DIRECTORY_OUTPUT) \

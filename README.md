@@ -28,7 +28,7 @@ The flow is triggered and controlled by an [Azure Pipeline](https://azure.micros
 |-------------------------|--------|
 | SETUP | <li>Check if the JMeter Docker image exists</li><li>Validate the JMX file that contains the JMeter test definition</li><li>Upload JMeter JMX file to Azure Storage Account File Share</li><li>Provision the infrastructure with Terraform</li> |
 | TEST | <li>Run JMeter test execution and wait for completion</li> |
-| RESULTS | <li>Show JMeter master logs</li><li>Get JMeter artifacts (e.g. logs, dashboard)</li><li>Convert JMeter tests result (JTL format) to JUnit format</li><li>Publish JUnit test results to Azure Pipelines</li><li>Publish JMeter artifacts to Azure Pipelines</li> |
+| RESULTS | <li>Show JMeter logs</li><li>Get JMeter artifacts (e.g. logs, dashboard)</li><li>Convert JMeter tests result (JTL format) to JUnit format</li><li>Publish JUnit test results to Azure Pipelines</li><li>Publish JMeter artifacts to Azure Pipelines</li> |
 | TEARDOWN | <li>Destroy all ephemeral infrastructure with Terraform</li> |
 
 On the `SETUP` phase, JMeter agents are provisioned as [Azure Container Instance (ACI)](https://azure.microsoft.com/en-us/services/container-instances/) using a [custom Docker image](./docker/Dockerfile) on Terraform. Through a [master/slave](https://en.wikipedia.org/wiki/Master/slave_(technology)) approach, JMeter master is responsible to configure all slaves using its own protocol, consolidating all results and generating the resulting artifacts (dashboard, logs, etc).

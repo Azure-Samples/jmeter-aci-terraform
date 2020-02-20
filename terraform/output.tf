@@ -27,6 +27,10 @@ output "jmeter_master_ip" {
   value = "${azurerm_container_group.jmeter_master.ip_address}"
 }
 
+output "jmeter_slaves_names" {
+  value = "${join(",", "${azurerm_container_group.jmeter_slaves.*.name}")}"
+}
+
 output "jmeter_slaves_ip_list" {
   value = ["${azurerm_container_group.jmeter_slaves.*.ip_address}"]
 }
