@@ -101,14 +101,14 @@ Then run the following commands to create the variable groups `JMETER_AZURE_PRIN
 
 ```shell
 PRIN_GROUP_ID=$(az pipelines variable-group create  --name JMETER_AZURE_PRINCIPAL --authorize \
-                                                    --variables ARM_CLIENT_ID=$ARM_CLIENT_ID \
-                                                                ARM_TENANT_ID=$ARM_TENANT_ID \
-                                                                ARM_SUBSCRIPTION_ID=$ARM_SUBSCRIPTION_ID \
+                                                    --variables ARM_CLIENT_ID=$CLIENT_ID \
+                                                                ARM_TENANT_ID=$TENANT_ID \
+                                                                ARM_SUBSCRIPTION_ID=$SUBSCRIPTION_ID \
                                                                 | jq .id)
 
 az pipelines variable-group variable create --group-id $PRIN_GROUP_ID --secret true \
                                             --name ARM_CLIENT_SECRET \
-                                            --value $ARM_CLIENT_SECRET
+                                            --value $CLIENT_SECRET
 
 SETT_GROUP_ID=$(az pipelines variable-group create  --name JMETER_TERRAFORM_SETTINGS --authorize \
                                                     --variables TF_VAR_JMETER_IMAGE_REGISTRY_NAME=$ACR_NAME \
