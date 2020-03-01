@@ -136,6 +136,9 @@ ACR_NAME=
 ACR_PASSWORD=
 ```
 
+> Note: Make sure the `ACR_NAME` doesn't contain any capital letter, as it's an invalid ACR name convention.
+
+
 Then run the following commands to create the variable groups `JMETER_AZURE_PRINCIPAL` and `JMETER_TERRAFORM_SETTINGS`:
 
 ```shell
