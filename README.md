@@ -67,10 +67,15 @@ On the `RESULTS` phase, a [JMeter Report Dashboard](https://jmeter.apache.org/us
 
 ### 1. Importing the repository to Azure DevOps
 
-First, you need to login on Azure CLI and configure Azure DevOps CLI with your organization/project settings:
+Log in to Azure through Azure CLI and install the Azure DevOps extension:
+
+```sh
+az login && az extension add --name azure-devops
+```
+
+Configure Azure DevOps CLI with your organization/project settings:
 
 ```shell
-az login
 az devops configure --defaults organization=https://dev.azure.com/your-organization project=YourProject
 ```
 
