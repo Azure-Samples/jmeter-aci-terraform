@@ -65,7 +65,7 @@ On the `RESULTS` phase, a [JMeter Report Dashboard](https://jmeter.apache.org/us
 
 ## Getting Started
 
-### 1. Import This Repository
+### 1. Importing the repository to Azure DevOps
 
 First, you need to login on Azure CLI and configure Azure DevOps CLI with your organization/project settings:
 
@@ -86,7 +86,39 @@ az repos import create --git-source-url $REPOSITORY_URL --repository $REPOSITORY
 
 > You can also use the UI to [import it on Azure DevOps](https://docs.microsoft.com/en-us/azure/devops/repos/git/import-git-repository?view=azure-devops) - As long as you don't forget to fill `$REPOSITORY_NAME` variable with the actual repository name.
 
-### 2. Create Variable Groups
+### 2. Creating or reusing a service principal
+
+Azure service principal is an identity created for use with applications, hosted services, and automated tools to access Azure resources. This access is restricted by the roles assigned to the service principal, giving you control over which resources can be accessed and at which level. 
+
+Terraform requires a service principal to authenticate to Azure. You can use an existing service principal or create a new one through Azure CLI or Azure Portal.
+
+You can follow the steps described [here](https://www.terraform.io/docs/providers/azurerm/guides/service_principal_client_secret.html#creating-a-service-principal-using-the-azure-cli) to create a service principal using the Azure CLI. Make sure you copied the `appId`, `password` and `tenant` properties. In the next steps, they will be used as `CLIENT_ID`, `CLIENT_SECRET` and `TENANT_ID`, respectively. 
+
+### 3. Getting the subscription ID
+
+If you don't know the subscription ID, you can run the following command throug Azure CLI:
+
+```sh
+az account show
+```
+
+It is expected to get the a similar response:
+
+```sh
+{
+  "environmentName": "AzureCloud",
+  "id": "<subscription id>",
+  "isDefault": true,
+  "name": "<subscription name>",
+  "state": "Enabled",
+  "tenantId": "<tenant id>",
+  ...
+}
+```
+
+Then copy the `id` property value. It will be used in the next step as `SUBSCRIPTION_ID`.
+
+### 4. Create Variable Groups
 
 Get you service principal, your ACR credentials, and fill the following empty variables. Then, run this block on Bash:
 
@@ -124,7 +156,7 @@ az pipelines variable-group variable create --group-id $SETT_GROUP_ID --secret t
                                             --value $ACR_PASSWORD
 ```
 
-### 3. Create and Run the Docker Pipeline
+### 5. Create and Run the Docker Pipeline
 
 ```shell
 PIPELINE_NAME_DOCKER=jmeter-docker-build
@@ -134,7 +166,7 @@ az pipelines create --name $PIPELINE_NAME_DOCKER --repository $REPOSITORY_NAME \
     --yml-path pipelines/azure-pipelines.docker.yml
 ```
 
-### 4. Create the JMeter Pipeline
+### 6. Create the JMeter Pipeline
 
 ```shell
 PIPELINE_NAME_JMETER=jmeter-load-test
@@ -147,11 +179,11 @@ az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR
 az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_SLAVES_COUNT --allow-override
 ```
 
-### 5. Update the JMX test definition (optional)
+### 7. Update the JMX test definition (optional)
 
 By default, this repository uses a `sample.jmx` file under the `jmeter` folder. This JMX file contains a test definition for performing HTTP requests on `azure.microsoft.com` endpoint through the `443` port. You can simply update the it with the test definition of your preference.
 
-### 6. Manually Run the JMeter Pipeline
+### 8. Manually Run the JMeter Pipeline
 
 You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmeter/sample.jmx)) and how many JMeter slaves you will need for your test. Then you can run the JMeter pipeline using the CLI:
 
