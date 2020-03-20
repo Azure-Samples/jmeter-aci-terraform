@@ -103,6 +103,7 @@ steps:
 
 - publish: $(JMETER_DIRECTORY_OUTPUT)
   artifact: JMeterResults
+  condition: succeededOrFailed()
   displayName: 'RESULTS: Publish Load Test Artifacts'
 
 - script: terraform destroy -auto-approve
