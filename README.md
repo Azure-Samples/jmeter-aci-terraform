@@ -57,7 +57,7 @@ On the `RESULTS` phase, a [JMeter Report Dashboard](https://jmeter.apache.org/us
 ## Prerequisites
 
 * [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest)
-* [Azure DevOps CLI](https://docs.microsoft.com/en-us/azure/devops/cli/?view=azure-devops)
+* [Azure DevOps Extension for Az CLI](https://docs.microsoft.com/en-us/azure/devops/cli/?view=azure-devops)
 * [Service Principal](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?view=azure-cli-latest)
 * [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/)
 * Shell
@@ -178,13 +178,16 @@ az pipelines create --name $PIPELINE_NAME_DOCKER --repository $REPOSITORY_NAME \
 
 ```shell
 PIPELINE_NAME_JMETER=jmeter-load-test
+ORGANIZATION_ADDRESS=https://dev.azure.com/YOUR_ORG_NAME
+PROJECT_NAME=your-project-name
 
 az pipelines create --name $PIPELINE_NAME_JMETER --repository $REPOSITORY_NAME \
     --repository-type tfsgit --branch master --skip-first-run \
     --yml-path pipelines/azure-pipelines.load-test.yml
 
-az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_JMX_FILE --allow-override
-az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_SLAVES_COUNT --allow-override
+az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_JMX_FILE --allow-override --organization $ORGANIZATION_ADDRESS --project $PROJECT_NAME
+
+az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_SLAVES_COUNT --allow-override --organization $ORGANIZATION_ADDRESS --project $PROJECT_NAME
 ```
 
 ### 7. Update the JMX test definition (optional)
