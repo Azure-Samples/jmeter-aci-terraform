@@ -67,9 +67,9 @@ resource "azurerm_storage_share" "jmeter_share" {
   quota                = var.JMETER_STORAGE_QUOTA_GIGABYTES
 }
 
-resource "azurerm_container_group" "jmeter_slaves" {
-  count               = var.JMETER_SLAVES_COUNT
-  name                = "${var.PREFIX}-slave${count.index}"
+resource "azurerm_container_group" "jmeter_workers" {
+  count               = var.JMETER_WORKERS_COUNT
+  name                = "${var.PREFIX}-worker${count.index}"
   location            = azurerm_resource_group.jmeter_rg.location
   resource_group_name = azurerm_resource_group.jmeter_rg.name
 
@@ -87,8 +87,8 @@ resource "azurerm_container_group" "jmeter_slaves" {
   container {
     name   = "jmeter"
     image  = var.JMETER_DOCKER_IMAGE
-    cpu    = var.JMETER_SLAVE_CPU
-    memory = var.JMETER_SLAVE_MEMORY
+    cpu    = var.JMETER_WORKER_CPU
+    memory = var.JMETER_WORKER_MEMORY
 
     ports {
       port     = var.JMETER_DOCKER_PORT
@@ -112,8 +112,8 @@ resource "azurerm_container_group" "jmeter_slaves" {
   }
 }
 
-resource "azurerm_container_group" "jmeter_master" {
-  name                = "${var.PREFIX}-master"
+resource "azurerm_container_group" "jmeter_controller" {
+  name                = "${var.PREFIX}-controller"
   location            = azurerm_resource_group.jmeter_rg.location
   resource_group_name = azurerm_resource_group.jmeter_rg.name
 
@@ -133,8 +133,8 @@ resource "azurerm_container_group" "jmeter_master" {
   container {
     name   = "jmeter"
     image  = var.JMETER_DOCKER_IMAGE
-    cpu    = var.JMETER_MASTER_CPU
-    memory = var.JMETER_MASTER_MEMORY
+    cpu    = var.JMETER_CONTROLLER_CPU
+    memory = var.JMETER_CONTROLLER_MEMORY
 
     ports {
       port     = var.JMETER_DOCKER_PORT
@@ -153,7 +153,7 @@ resource "azurerm_container_group" "jmeter_master" {
     commands = [
       "/bin/sh",
       "-c",
-      "cd /jmeter; /entrypoint.sh -n -J server.rmi.ssl.disable=true -t ${var.JMETER_JMX_FILE} -l ${var.JMETER_RESULTS_FILE} -e -o ${var.JMETER_DASHBOARD_FOLDER} -R ${join(",", "${azurerm_container_group.jmeter_slaves.*.ip_address}")}",
+      "cd /jmeter; /entrypoint.sh -n -J server.rmi.ssl.disable=true -t ${var.JMETER_JMX_FILE} -l ${var.JMETER_RESULTS_FILE} -e -o ${var.JMETER_DASHBOARD_FOLDER} -R ${join(",", "${azurerm_container_group.jmeter_workers.*.ip_address}")}",
     ]
   }
 }

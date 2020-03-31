@@ -8,10 +8,10 @@ All environment variables that start with the prefix `TF_VAR` can be used by Ter
 
 There are 2 variables that can be set directly on the JMeter pipeline. Those are:
 
-| Environment Variable       | Terraform Variable  | Default Value |
-|----------------------------|---------------------|---------------|
-| TF_VAR_JMETER_JMX_FILE     | JMETER_JMX_FILE     |               |
-| TF_VAR_JMETER_SLAVES_COUNT | JMETER_SLAVES_COUNT |       1       |
+| Environment Variable        | Terraform Variable   | Default Value |
+|-----------------------------|----------------------|---------------|
+| TF_VAR_JMETER_JMX_FILE      | JMETER_JMX_FILE      |               |
+| TF_VAR_JMETER_WORKERS_COUNT | JMETER_WORKERS_COUNT |       1       |
 
 All the other variables can be set on a library group called `JMETER_TERRAFORM_SETTINGS`. If a variable is not present on that library, a default value will be used, as the following table shows:
 
@@ -22,10 +22,10 @@ All the other variables can be set on a library group called `JMETER_TERRAFORM_S
 | TF_VAR_PREFIX                         | PREFIX                         |        jmeter       |
 | TF_VAR_VNET_ADDRESS_SPACE             | VNET_ADDRESS_SPACE             |     10.0.0.0/16     |
 | TF_VAR_SUBNET_ADDRESS_PREFIX          | SUBNET_ADDRESS_PREFIX          |     10.0.0.0/24     |
-| TF_VAR_JMETER_SLAVE_CPU               | JMETER_SLAVE_CPU               |         2.0         |
-| TF_VAR_JMETER_SLAVE_MEMORY            | JMETER_SLAVE_MEMORY            |         8.0         |
-| TF_VAR_JMETER_MASTER_CPU              | JMETER_MASTER_CPU              |         2.0         |
-| TF_VAR_JMETER_MASTER_MEMORY           | JMETER_MASTER_MEMORY           |         8.0         |
+| TF_VAR_JMETER_WORKER_CPU              | JMETER_WORKER_CPU              |         2.0         |
+| TF_VAR_JMETER_WORKER_MEMORY           | JMETER_WORKER_MEMORY           |         8.0         |
+| TF_VAR_JMETER_CONTROLLER_CPU          | JMETER_CONTROLLER_CPU          |         2.0         |
+| TF_VAR_JMETER_CONTROLLER_MEMORY       | JMETER_CONTROLLER_MEMORY       |         8.0         |
 | TF_VAR_JMETER_DOCKER_IMAGE            | JMETER_DOCKER_IMAGE            | justb4/jmeter:5.1.1 |
 | TF_VAR_JMETER_DOCKER_PORT             | JMETER_DOCKER_PORT             |         1099        |
 | TF_VAR_JMETER_IMAGE_REGISTRY_SERVER   | JMETER_IMAGE_REGISTRY_SERVER   |                     |

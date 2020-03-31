@@ -19,24 +19,24 @@ output "storage_file_share_url" {
   value = "${azurerm_storage_share.jmeter_share.url}"
 }
 
-output "jmeter_master_name" {
-  value = "${azurerm_container_group.jmeter_master.name}"
+output "jmeter_controller_name" {
+  value = "${azurerm_container_group.jmeter_controller.name}"
 }
 
-output "jmeter_master_ip" {
-  value = "${azurerm_container_group.jmeter_master.ip_address}"
+output "jmeter_controller_ip" {
+  value = "${azurerm_container_group.jmeter_controller.ip_address}"
 }
 
-output "jmeter_slaves_names" {
-  value = "${join(",", "${azurerm_container_group.jmeter_slaves.*.name}")}"
+output "jmeter_workers_names" {
+  value = "${join(",", "${azurerm_container_group.jmeter_workers.*.name}")}"
 }
 
-output "jmeter_slaves_ip_list" {
-  value = ["${azurerm_container_group.jmeter_slaves.*.ip_address}"]
+output "jmeter_workers_ip_list" {
+  value = ["${azurerm_container_group.jmeter_workers.*.ip_address}"]
 }
 
-output "jmeter_slaves_ips" {
-  value = "${join(",", "${azurerm_container_group.jmeter_slaves.*.ip_address}")}"
+output "jmeter_workers_ips" {
+  value = "${join(",", "${azurerm_container_group.jmeter_workers.*.ip_address}")}"
 }
 
 output "jmeter_results_file" {

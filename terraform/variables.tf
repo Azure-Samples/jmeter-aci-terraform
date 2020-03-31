@@ -23,27 +23,27 @@ variable "SUBNET_ADDRESS_PREFIX" {
   default = "10.0.0.0/24"
 }
 
-variable "JMETER_SLAVES_COUNT" {
+variable "JMETER_WORKERS_COUNT" {
   type    = number
   default = 1
 }
 
-variable "JMETER_SLAVE_CPU" {
+variable "JMETER_WORKER_CPU" {
   type    = string
   default = "2.0"
 }
 
-variable "JMETER_SLAVE_MEMORY" {
+variable "JMETER_WORKER_MEMORY" {
   type    = string
   default = "8.0"
 }
 
-variable "JMETER_MASTER_CPU" {
+variable "JMETER_CONTROLLER_CPU" {
   type    = string
   default = "2.0"
 }
 
-variable "JMETER_MASTER_MEMORY" {
+variable "JMETER_CONTROLLER_MEMORY" {
   type    = string
   default = "8.0"
 }

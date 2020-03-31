@@ -31,15 +31,15 @@ The flow is triggered and controlled by an [Azure Pipeline](https://azure.micros
 | RESULTS | <li>Show JMeter logs</li><li>Get JMeter artifacts (e.g. logs, dashboard)</li><li>Convert JMeter tests result (JTL format) to JUnit format</li><li>Publish JUnit test results to Azure Pipelines</li><li>Publish JMeter artifacts to Azure Pipelines</li> |
 | TEARDOWN | <li>Destroy all ephemeral infrastructure with Terraform</li> |
 
-On the `SETUP` phase, JMeter agents are provisioned as [Azure Container Instance (ACI)](https://azure.microsoft.com/en-us/services/container-instances/) using a [custom Docker image](./docker/Dockerfile) on Terraform. Through a [master/slave](https://en.wikipedia.org/wiki/Master/slave_(technology)) approach, JMeter master is responsible to configure all slaves using its own protocol, consolidating all results and generating the resulting artifacts (dashboard, logs, etc).
+On the `SETUP` phase, JMeter agents are provisioned as [Azure Container Instance (ACI)](https://azure.microsoft.com/en-us/services/container-instances/) using a [custom Docker image](./docker/Dockerfile) on Terraform. Through a [Remote Testing](https://jmeter.apache.org/usermanual/remote-test.html) approach, JMeter controller is responsible to configure all workers using its own protocol, consolidating all results and generating the resulting artifacts (dashboard, logs, etc).
 
 The infrastructure provisioned by Terraform includes:
 
 * Resource Group
 * Virtual Network (VNet)
 * Storage Account File Share
-* 1 JMeter master on ACI
-* N JMeter slaves on ACI
+* 1 JMeter controller on ACI
+* N JMeter workers on ACI
 
 On the `RESULTS` phase, a [JMeter Report Dashboard](https://jmeter.apache.org/usermanual/generating-dashboard.html) and [Tests Results](https://docs.microsoft.com/en-us/azure/devops/pipelines/test/review-continuous-test-results-after-build?view=azure-devops) are published in the end of each load testing execution.
 
@@ -184,7 +184,7 @@ az pipelines create --name $PIPELINE_NAME_JMETER --repository $REPOSITORY_NAME \
     --yml-path pipelines/azure-pipelines.load-test.yml
 
 az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_JMX_FILE --allow-override
-az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_SLAVES_COUNT --allow-override
+az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_WORKERS_COUNT --allow-override
 ```
 
 ### 7. Update the JMX test definition (optional)
@@ -193,14 +193,14 @@ By default, this repository uses a `sample.jmx` file under the `jmeter` folder. 
 
 ### 8. Manually Run the JMeter Pipeline
 
-You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmeter/sample.jmx)) and how many JMeter slaves you will need for your test. Then you can run the JMeter pipeline using the CLI:
+You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmeter/sample.jmx)) and how many JMeter workers you will need for your test. Then you can run the JMeter pipeline using the CLI:
 
 ```shell
 JMETER_JMX_FILE=sample.jmx
-JMETER_SLAVES_COUNT=1
+JMETER_WORKERS_COUNT=1
 
 az pipelines run --name $PIPELINE_NAME_JMETER \
-    --variables TF_VAR_JMETER_JMX_FILE=$JMETER_JMX_FILE TF_VAR_JMETER_SLAVES_COUNT=$JMETER_SLAVES_COUNT
+    --variables TF_VAR_JMETER_JMX_FILE=$JMETER_JMX_FILE TF_VAR_JMETER_WORKERS_COUNT=$JMETER_WORKERS_COUNT
 ```
 
 Or even use the UI to define variables and Run the pipeline:
