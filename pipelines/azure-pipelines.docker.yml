@@ -10,15 +10,31 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-- group: JMETER_AZURE_PRINCIPAL
 - group: JMETER_TERRAFORM_SETTINGS
 
 steps:
-- script: |
-    az login --service-principal --username $(ARM_CLIENT_ID) --password $(ARM_CLIENT_SECRET) --tenant $(ARM_TENANT_ID)
-    az account set --subscription $(ARM_SUBSCRIPTION_ID)
-  displayName: 'Login on Azure CLI'
 
-- script: |
-    az acr build -t $(TF_VAR_JMETER_DOCKER_IMAGE) -r $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -f $(Build.SourcesDirectory)/docker/Dockerfile .
+- task: AzureKeyVault@1
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    KeyVaultName: $(TF_VAR_KEY_VAULT_NAME)
+    SecretsFilter: 'acr-secret,arm-client-secret'
+  displayName: 'Get secrets from Azure Key Vault'
+
+- task: AzureCLI@2
+  displayName: 'ACR login'
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -u $(TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME) -p $(acr-secret)
+
+- task: AzureCLI@2
   displayName: 'Build and Push JMeter Docker image'
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az acr build -t $(TF_VAR_JMETER_DOCKER_IMAGE) -r $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -f $(Build.SourcesDirectory)/docker/Dockerfile $(Build.SourcesDirectory)/docker

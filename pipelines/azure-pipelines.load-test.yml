@@ -4,7 +4,6 @@ pool:
   vmImage: 'ubuntu-18.04'
 
 variables:
-- group: JMETER_AZURE_PRINCIPAL
 - group: JMETER_TERRAFORM_SETTINGS
 - name: JMETER_DIRECTORY_INPUT
   value: $(System.DefaultWorkingDirectory)/jmeter
@@ -13,13 +12,23 @@ variables:
 
 steps:
 
-- script: |
-    az login --service-principal --username $(ARM_CLIENT_ID) --password $(ARM_CLIENT_SECRET) --tenant $(ARM_TENANT_ID)
-    az account set --subscription $(ARM_SUBSCRIPTION_ID)
-  displayName: 'SETUP: Login on Azure CLI'
+- task: AzureKeyVault@1
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    KeyVaultName: $(TF_VAR_KEY_VAULT_NAME)
+    SecretsFilter: 'acr-secret,arm-client-secret'
+  displayName: 'Get secrets from Azure Key Vault'
+
+- task: AzureCLI@2
+  displayName: 'Login to Azure Container Registry'
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -u $(TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME) -p $(acr-secret)
 
 - script: |
-    az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME)
     docker pull $(TF_VAR_JMETER_DOCKER_IMAGE)
   displayName: 'SETUP: Validate JMeter Docker Image'
 
@@ -36,8 +45,8 @@ steps:
 - script: terraform apply -target azurerm_storage_share.jmeter_share -auto-approve
   workingDirectory: ./terraform
   env:
-    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD)
+    ARM_CLIENT_SECRET: $(arm-client-secret)
+    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'SETUP: Run Terraform Apply (target=file share)'
 
 - script: |
@@ -52,39 +61,51 @@ steps:
 - script: terraform apply -auto-approve
   workingDirectory: ./terraform
   env:
-    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD)
+    ARM_CLIENT_SECRET: $(arm-client-secret)
+    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'SETUP: Run Terraform Apply (target=all)'
 
-- script: |
-    RG=$(terraform output resource_group_name)
-    NAME=$(terraform output jmeter_controller_name)
-    echo "`date`: Started!"
-    while [ $(az container show -g $RG -n $NAME --query "containers[0].instanceView.currentState.state" -o tsv) == "Running" ]; do
-      echo "`date`: Still Running..."
-      sleep 20
-    done
-    echo "`date`: Finished!"
-  workingDirectory: ./terraform
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    workingDirectory: ./terraform
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      RG=$(terraform output resource_group_name)
+      NAME=$(terraform output jmeter_controller_name)
+      echo "`date`: Started!"
+      while [ $(az container show -g $RG -n $NAME --query "containers[0].instanceView.currentState.state" -o tsv) == "Running" ]; do
+        echo "`date`: Still Running..."
+        sleep 20
+      done
+      echo "`date`: Finished!"
   displayName: 'TEST: Wait Test Execution'
 
-- script: az container logs -g $(terraform output resource_group_name) -n $(terraform output jmeter_controller_name)
-  workingDirectory: ./terraform
-  displayName: 'RESULTS: Show JMeter Controller Logs'
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    workingDirectory: ./terraform
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az container logs -g $(terraform output resource_group_name) -n $(terraform output jmeter_controller_name)
+      RESOURCE_GROUP=$(terraform output resource_group_name)
+      echo -n $(terraform output jmeter_workers_names) | xargs -t -d "," -I '{}' -n1 az container logs -g $RESOURCE_GROUP -n {}
+  displayName: 'RESULTS: Collect JMeter Controller and Worker Logs'
 
-- script: |
-    RESOURCE_GROUP=$(terraform output resource_group_name)
-    echo -n $(terraform output jmeter_workers_names) | xargs -t -d "," -I '{}' -n1 az container logs -g $RESOURCE_GROUP -n {} 
-  workingDirectory: ./terraform
-  displayName: 'RESULTS: Show JMeter Worker Logs'
-
-- script: |
-    azcopy \
-      --source $(terraform output storage_file_share_url) \
-      --destination $(JMETER_DIRECTORY_OUTPUT) \
-      --source-key $(terraform output storage_account_key) \
-      --recursive
-  workingDirectory: ./terraform
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    workingDirectory: ./terraform
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      azcopy \
+        --source $(terraform output storage_file_share_url) \
+        --destination $(JMETER_DIRECTORY_OUTPUT) \
+        --source-key $(terraform output storage_account_key) \
+        --recursive
   displayName: 'RESULTS: Get JMeter Artifacts'
 
 - script: |
@@ -106,10 +127,9 @@ steps:
   condition: succeededOrFailed()
   displayName: 'RESULTS: Publish Load Test Artifacts'
 
-- script: terraform destroy -auto-approve
+- script: terraform destroy -var="JMETER_ENVIRONMENT_FILE=${{ parameters.testenvironmentfile }}" -var="JMETER_WORKERS_COUNT=${{ parameters.workercount }}" -var="JMETER_LOAD_CONFIG_FILE=${{ parameters.loadconfigurationfile }}" -auto-approve
   workingDirectory: ./terraform
-  condition: succeededOrFailed()
   env:
-    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD)
+    ARM_CLIENT_SECRET: $(arm-client-secret)
+    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'TEARDOWN: Run Terraform Destroy'
