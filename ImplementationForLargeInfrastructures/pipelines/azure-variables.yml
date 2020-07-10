@@ -1,0 +1,6 @@
+variables:
+  AZURE_RESOURCE_GROUP_NAME: 'jmeter'
+  JMETER_DIRECTORY_INPUT: $(System.DefaultWorkingDirectory)/jmeter
+  JMETER_DIRECTORY_OUTPUT: $(System.DefaultWorkingDirectory)/results
+  KEY_VAULT_NAME: 'jmeter-key-vault'
+  AZURE_SERVICE_CONNECTION_NAME: 'jmeterSampleServiceConnection'

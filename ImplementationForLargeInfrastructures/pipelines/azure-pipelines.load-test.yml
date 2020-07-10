@@ -1,0 +1,175 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-18.04'
+
+parameters:
+- name: loadconfigurationfile
+  displayName: Load Configuration file
+  type: string
+  default: peak-test.properties
+  values:
+    - peak-test.properties
+    - stress-test.properties
+- name: testenvironmentfile
+  displayName: Test Environment file
+  type: string
+  default: test-environment-one.properties
+  values:
+    - test-environment-one.properties
+    - test-environment-two.properties
+- name: workercount
+  displayName: JMeter Worker Count
+  type: number
+  default: 1
+  values:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+
+variables:
+- template: azure-variables.yml
+- group: JMETER_AZURE_PRINCIPAL
+- group: JMETER_TERRAFORM_SETTINGS
+
+stages:
+  - stage: ValidateJmeterJMX
+    displayName: Validate Jmeter JMX
+    jobs:
+      - job:
+        steps:
+        - task: AzureKeyVault@1
+          inputs:
+            azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
+            KeyVaultName: $(KEY_VAULT_NAME)
+            SecretsFilter: 'acr-secret,arm-client-secret'
+          displayName: 'Get secrets from Azure Key Vault'
+
+        - task: AzureCLI@2
+          displayName: 'Login to Azure Container Registry'
+          inputs:
+            azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -u $(TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME) -p $(acr-secret)
+
+        - script: |
+            docker pull $(TF_VAR_JMETER_DOCKER_IMAGE)
+          displayName: 'SETUP: Validate JMeter Docker Image'
+
+        - script: |
+            docker run --name=jmx-validator -v $(JMETER_DIRECTORY_INPUT):/jmeter -w /jmeter \
+              --entrypoint "TestPlanCheck.sh" $(TF_VAR_JMETER_DOCKER_IMAGE) \
+              --stats --tree-dump --jmx $(TF_VAR_JMETER_JMX_FILE)
+          displayName: 'SETUP: Validate JMX File'
+
+  - stage: runLoadTest
+    displayName: Run Load Test
+    jobs:
+      - job:
+        steps:
+        - task: AzureKeyVault@1
+          inputs:
+            azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
+            KeyVaultName: $(KEY_VAULT_NAME)
+            SecretsFilter: 'acr-secret,arm-client-secret'
+          displayName: 'Get secrets from Azure Key Vault'
+
+        - script: terraform init
+          workingDirectory: ./terraform
+          displayName: 'SETUP: Run Terraform Init'
+
+        - script: terraform apply -target azurerm_storage_share.jmeter_share -var="JMETER_WORKERS_COUNT=${{ parameters.workercount }}" -var="JMETER_ENVIRONMENT_FILE=${{ parameters.testenvironmentfile }}" -var="JMETER_LOAD_CONFIG_FILE=${{ parameters.loadconfigurationfile }}" -auto-approve
+          workingDirectory: ./terraform
+          env:
+            ARM_CLIENT_SECRET: $(arm-client-secret)
+            TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
+          displayName: 'SETUP: Run Terraform Apply (target=file share)'
+
+        - script: |
+            azcopy \
+            --source $(JMETER_DIRECTORY_INPUT) \
+            --destination $(terraform output storage_file_share_url) \
+            --dest-key $(terraform output storage_account_key) \
+            --recursive
+          workingDirectory: ./terraform
+          displayName: 'SETUP: Transfer JMeter Files to Storage Account'
+
+        - script: terraform apply -var="JMETER_ENVIRONMENT_FILE=${{ parameters.testenvironmentfile }}" -var="JMETER_WORKERS_COUNT=${{ parameters.workercount }}" -var="JMETER_LOAD_CONFIG_FILE=${{ parameters.loadconfigurationfile }}" -auto-approve
+          workingDirectory: ./terraform
+          env:
+            ARM_CLIENT_SECRET: $(arm-client-secret)
+            TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
+          displayName: 'SETUP: Run Terraform Apply (target=all)'
+
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
+            workingDirectory: ./terraform
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              RG=$(terraform output resource_group_name)
+              NAME=$(terraform output jmeter_controller_name)
+              echo "`date`: Started!"
+              while [ $(az container show -g $RG -n $NAME --query "containers[0].instanceView.currentState.state" -o tsv) == "Running" ]; do
+                echo "`date`: Still Running..."
+                sleep 20
+              done
+              echo "`date`: Finished!"
+          displayName: 'TEST: Wait Test Execution'
+
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
+            workingDirectory: ./terraform
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az container logs -g $(terraform output resource_group_name) -n $(terraform output jmeter_controller_name)
+              RESOURCE_GROUP=$(terraform output resource_group_name)
+              echo -n $(terraform output jmeter_workers_names) | xargs -t -d "," -I '{}' -n1 az container logs -g $RESOURCE_GROUP -n {}
+          displayName: 'RESULTS: Collect JMeter Controller and Worker Logs'
+
+        - task: AzureCLI@2
+          inputs:
+            azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
+            workingDirectory: ./terraform
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              azcopy \
+                --source $(terraform output storage_file_share_url) \
+                --destination $(JMETER_DIRECTORY_OUTPUT) \
+                --source-key $(terraform output storage_account_key) \
+                --recursive
+          displayName: 'RESULTS: Get JMeter Artifacts'
+
+        - script: |
+            JMETER_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/$(terraform output jmeter_results_file)
+            JUNIT_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/output.xml
+            python3 ../scripts/jtl_junit_converter.py $JMETER_RESULTS $JUNIT_RESULTS
+          workingDirectory: ./terraform
+          displayName: 'RESULTS: Convert JMeter Results to JUnit Format'
+
+        - task: PublishTestResults@2
+          inputs:
+            testResultsFormat: 'JUnit'
+            testResultsFiles: '$(JMETER_DIRECTORY_OUTPUT)/output.xml'
+            failTaskOnFailedTests: true
+          displayName: 'RESULTS: Publish Load Testing Results'
+
+        - publish: $(JMETER_DIRECTORY_OUTPUT)
+          artifact: JMeterResults
+          condition: succeededOrFailed()
+          displayName: 'RESULTS: Publish Load Test Artifacts'
+
+        - script: terraform destroy -var="JMETER_ENVIRONMENT_FILE=${{ parameters.testenvironmentfile }}" -var="JMETER_WORKERS_COUNT=${{ parameters.workercount }}" -var="JMETER_LOAD_CONFIG_FILE=${{ parameters.loadconfigurationfile }}" -auto-approve
+          workingDirectory: ./terraform
+          env:
+            ARM_CLIENT_SECRET: $(arm-client-secret)
+            TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
+          displayName: 'TEARDOWN: Run Terraform Destroy'
