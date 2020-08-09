@@ -14,22 +14,6 @@ variables:
 
 steps:
 
-- task: AzureKeyVault@1
-  inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
-    KeyVaultName: $(TF_VAR_KEY_VAULT_NAME)
-    SecretsFilter: 'acr-secret,arm-client-secret'
-  displayName: 'Get secrets from Azure Key Vault'
-
-- task: AzureCLI@2
-  displayName: 'ACR login'
-  inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
-    scriptType: bash
-    scriptLocation: inlineScript
-    inlineScript: |
-      az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -u $(TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME) -p $(acr-secret)
-
 - task: AzureCLI@2
   displayName: 'Build and Push JMeter Docker image'
   inputs:

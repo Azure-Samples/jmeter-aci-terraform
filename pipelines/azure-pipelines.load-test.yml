@@ -20,17 +20,14 @@ steps:
   displayName: 'Get secrets from Azure Key Vault'
 
 - task: AzureCLI@2
-  displayName: 'Login to Azure Container Registry'
+  displayName: 'SETUP: Validate JMeter Docker Image'
   inputs:
     azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: |
-      az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -u $(TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME) -p $(acr-secret)
-
-- script: |
-    docker pull $(TF_VAR_JMETER_DOCKER_IMAGE)
-  displayName: 'SETUP: Validate JMeter Docker Image'
+      az acr login -n $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME)
+      docker pull $(TF_VAR_JMETER_DOCKER_IMAGE)
 
 - script: |
     docker run --name=jmx-validator -v $(JMETER_DIRECTORY_INPUT):/jmeter -w /jmeter \

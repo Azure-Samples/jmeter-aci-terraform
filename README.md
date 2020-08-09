@@ -109,7 +109,7 @@ If you don't know the subscription ID, you can run the following command throug 
 az account show
 ```
 
-It is expected to get the a similar response:
+It is expected to get a similar response:
 
 ```sh
 {
@@ -128,10 +128,10 @@ Then copy the `id` property value. It will be used in the next step as `SUBSCRIP
 ### 4. Create Variable Groups
 
 Ensure below steps are complete before creating variable groups on Azure Devops:
-- Azure Service Connectione name - Use the service principle from above to set up service connection
+- Azure Service Connection name - Use the service principal from above to set up service connection
 - Azure Key Vault name and set up below secrets within the vault with keys specified below:
-  - Set up the ARM client secret with key 'arm_client_secret' assigned
-  - Set up the container registry secret with key 'acr_secret' assigned
+  - Set up the ARM client secret with key `arm-client-secret` assigned
+  - Set up the container registry secret with key `acr-secret` assigned
 - Azure Container Registry name
 
 Now fill the following empty variables below and run this block on Bash:
