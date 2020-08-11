@@ -16,7 +16,7 @@ steps:
   inputs:
     azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
     KeyVaultName: $(TF_VAR_KEY_VAULT_NAME)
-    SecretsFilter: 'acr-secret,arm-client-secret'
+    SecretsFilter: '*'
   displayName: 'Get secrets from Azure Key Vault'
 
 - task: AzureCLI@2
@@ -42,6 +42,9 @@ steps:
 - script: terraform apply -target azurerm_storage_share.jmeter_share -auto-approve
   workingDirectory: ./terraform
   env:
+    ARM_SUBSCRIPTION_ID: $(arm-subscription-id)
+    ARM_TENANT_ID: $(arm-tenant-id)
+    ARM_CLIENT_ID: $(arm-client-id)
     ARM_CLIENT_SECRET: $(arm-client-secret)
     TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'SETUP: Run Terraform Apply (target=file share)'
@@ -58,6 +61,9 @@ steps:
 - script: terraform apply -auto-approve
   workingDirectory: ./terraform
   env:
+    ARM_SUBSCRIPTION_ID: $(arm-subscription-id)
+    ARM_TENANT_ID: $(arm-tenant-id)
+    ARM_CLIENT_ID: $(arm-client-id)
     ARM_CLIENT_SECRET: $(arm-client-secret)
     TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'SETUP: Run Terraform Apply (target=all)'
@@ -124,9 +130,12 @@ steps:
   condition: succeededOrFailed()
   displayName: 'RESULTS: Publish Load Test Artifacts'
 
-- script: terraform destroy -var="JMETER_ENVIRONMENT_FILE=${{ parameters.testenvironmentfile }}" -var="JMETER_WORKERS_COUNT=${{ parameters.workercount }}" -var="JMETER_LOAD_CONFIG_FILE=${{ parameters.loadconfigurationfile }}" -auto-approve
+- script: terraform destroy -auto-approve
   workingDirectory: ./terraform
   env:
+    ARM_SUBSCRIPTION_ID: $(arm-subscription-id)
+    ARM_TENANT_ID: $(arm-tenant-id)
+    ARM_CLIENT_ID: $(arm-client-id)
     ARM_CLIENT_SECRET: $(arm-client-secret)
     TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'TEARDOWN: Run Terraform Destroy'

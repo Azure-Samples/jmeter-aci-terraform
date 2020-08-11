@@ -103,7 +103,7 @@ You can follow the steps described [here](https://www.terraform.io/docs/provider
 
 ### 3. Getting the subscription ID
 
-If you don't know the subscription ID, you can run the following command throug Azure CLI:
+If you don't know the subscription ID, you can run the following command through Azure CLI:
 
 ```sh
 az account show
@@ -125,21 +125,43 @@ It is expected to get a similar response:
 
 Then copy the `id` property value. It will be used in the next step as `SUBSCRIPTION_ID`.
 
-### 4. Create Variable Groups
+### 4. Create Azure Devops Service Connection
+
+Fill the following empty variables below and run this block on Bash, there is a prompt for `CLIENT_SECRET` during service connection creation.
+You can assign any service connection name.
+
+```shell
+CLIENT_ID=
+SUBSCRIPTION_ID=
+TENANT_ID=
+SUBSCRIPTION_NAME=
+SERVICE_CONNECTION_NAME=
+
+az devops service-endpoint azurerm create  --azure-rm-service-principal-id ${CLIENT_ID} \
+        --azure-rm-subscription-id ${SUBSCRIPTION_ID}  --azure-rm-subscription-name ${SUBSCRIPTION_NAME}  \
+        --azure-rm-tenant-id ${TENANT_ID} --name ${SERVICE_CONNECTION_NAME}
+```
+
+> NOTE: If a mistake is made in the data provided above, for eg. incorrect service principle ID, 
+>the service connection will still be created. You should always manually verify the connection using Azure Devops 
+>project settings after creation.
+
+### 5. Create Variable Groups
 
 Ensure below steps are complete before creating variable groups on Azure Devops:
-- Azure Service Connection name - Use the service principal from above to set up service connection
-- Azure Key Vault name and set up below secrets within the vault with keys specified below:
-  - Set up the ARM client secret with key `arm-client-secret` assigned
-  - Set up the container registry secret with key `acr-secret` assigned
-- Azure Container Registry name
+- Azure Service Connection name from the step above
+- Azure key vault name
+- Access policy in Azure key vault to allow Azure service principal used to set up service connection, access to get keys from the vault
+- Set up secrets within the key vault with keys specified below:
+  - SUBSCRIPTION_ID with key arm-subscription-id
+  - TENANT_ID with key arm-tenant-id
+  - CLIENT_ID with key arm-client-id
+  - CLIENT_SECRET with key arm-client-secret
+  - Azure Container Registry password with key acr-secret
 
 Now fill the following empty variables below and run this block on Bash:
 
 ```shell
-CLIENT_ID=
-TENANT_ID=
-SUBSCRIPTION_ID=
 ACR_NAME=
 KEY_VAULT_NAME=
 SERVICE_CONNECTION_NAME=
@@ -155,7 +177,7 @@ SETT_GROUP_ID=$(az pipelines variable-group create  --name JMETER_TERRAFORM_SETT
                                                     --variables TF_VAR_JMETER_IMAGE_REGISTRY_NAME=$ACR_NAME \
                                                                 TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME=$ACR_NAME \
                                                                 TF_VAR_JMETER_IMAGE_REGISTRY_SERVER=$ACR_NAME.azurecr.io \
-                                                                TF_VAR_SERVICE_CONNECTION_NAME=$SERVICE_CONNECTION_NAME \
+                                                                TF_VAR_SERVICE_CONNECTION_NAME="$SERVICE_CONNECTION_NAME" \
                                                                 TF_VAR_KEY_VAULT_NAME=$KEY_VAULT_NAME \
                                                                 TF_VAR_JMETER_DOCKER_IMAGE=$ACR_NAME.azurecr.io/jmeter \
                                                                 | jq .id)
@@ -163,7 +185,7 @@ SETT_GROUP_ID=$(az pipelines variable-group create  --name JMETER_TERRAFORM_SETT
 az pipelines variable-group variable create --group-id $SETT_GROUP_ID
 ```
 
-### 5. Create and Run the Docker Pipeline
+### 6. Create and Run the Docker Pipeline
 
 ```shell
 PIPELINE_NAME_DOCKER=jmeter-docker-build
@@ -173,7 +195,7 @@ az pipelines create --name $PIPELINE_NAME_DOCKER --repository $REPOSITORY_NAME \
     --yml-path pipelines/azure-pipelines.docker.yml
 ```
 
-### 6. Create the JMeter Pipeline
+### 7. Create the JMeter Pipeline
 
 ```shell
 PIPELINE_NAME_JMETER=jmeter-load-test
@@ -186,11 +208,11 @@ az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR
 az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_WORKERS_COUNT --allow-override
 ```
 
-### 7. Update the JMX test definition (optional)
+### 8. Update the JMX test definition (optional)
 
 By default, this repository uses a `sample.jmx` file under the `jmeter` folder. This JMX file contains a test definition for performing HTTP requests on `azure.microsoft.com` endpoint through the `443` port. You can simply update the it with the test definition of your preference.
 
-### 8. Manually Run the JMeter Pipeline
+### 9. Manually Run the JMeter Pipeline
 
 You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmeter/sample.jmx)) and how many JMeter workers you will need for your test. Then you can run the JMeter pipeline using the CLI:
 
