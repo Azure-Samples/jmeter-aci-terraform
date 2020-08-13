@@ -134,6 +134,8 @@ TENANT_ID=
 SUBSCRIPTION_ID=
 ACR_NAME=
 ACR_PASSWORD=
+ORGANIZATION=https://dev.azure.com/your-organization
+PROJECT=your-project
 ```
 
 > Note: Make sure the `ACR_NAME` doesn't contain any capital letter, as it's an invalid ACR name convention.
@@ -143,16 +145,22 @@ Then run the following commands to create the variable groups `JMETER_AZURE_PRIN
 
 ```shell
 PRIN_GROUP_ID=$(az pipelines variable-group create  --name JMETER_AZURE_PRINCIPAL --authorize \
+                                                    --organization $ORGANIZATION \
+                                                    --project $PROJECT \
                                                     --variables ARM_CLIENT_ID=$CLIENT_ID \
                                                                 ARM_TENANT_ID=$TENANT_ID \
                                                                 ARM_SUBSCRIPTION_ID=$SUBSCRIPTION_ID \
                                                                 | jq .id)
 
 az pipelines variable-group variable create --group-id $PRIN_GROUP_ID --secret true \
+                                            --organization $ORGANIZATION \
+                                            --project $PROJECT \
                                             --name ARM_CLIENT_SECRET \
                                             --value $CLIENT_SECRET
 
 SETT_GROUP_ID=$(az pipelines variable-group create  --name JMETER_TERRAFORM_SETTINGS --authorize \
+                                                    --organization $ORGANIZATION \
+                                                    --project $PROJECT \
                                                     --variables TF_VAR_JMETER_IMAGE_REGISTRY_NAME=$ACR_NAME \
                                                                 TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME=$ACR_NAME \
                                                                 TF_VAR_JMETER_IMAGE_REGISTRY_SERVER=$ACR_NAME.azurecr.io \
@@ -160,6 +168,8 @@ SETT_GROUP_ID=$(az pipelines variable-group create  --name JMETER_TERRAFORM_SETT
                                                                 | jq .id)
 
 az pipelines variable-group variable create --group-id $SETT_GROUP_ID --secret true \
+                                            --organization $ORGANIZATION \
+                                            --project $PROJECT \
                                             --name TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD \
                                             --value $ACR_PASSWORD
 ```
@@ -168,23 +178,33 @@ az pipelines variable-group variable create --group-id $SETT_GROUP_ID --secret t
 
 ```shell
 PIPELINE_NAME_DOCKER=jmeter-docker-build
+REPOSITORY_NAME=jmeter-load-test
+ORGANIZATION=https://dev.azure.com/your-organization
+PROJECT=your-project
 
 az pipelines create --name $PIPELINE_NAME_DOCKER --repository $REPOSITORY_NAME \
-    --repository-type tfsgit --branch master \
-    --yml-path pipelines/azure-pipelines.docker.yml
+                                                 --organization $ORGANIZATION \
+                                                 --project $PROJECT \
+                                                 --repository-type tfsgit --branch main \
+                                                 --yml-path pipelines/azure-pipelines.docker.yml
 ```
 
 ### 6. Create the JMeter Pipeline
 
 ```shell
 PIPELINE_NAME_JMETER=jmeter-load-test
+REPOSITORY_NAME=jmeter-load-test
+ORGANIZATION=https://dev.azure.com/your-organization
+PROJECT=your-project
 
 az pipelines create --name $PIPELINE_NAME_JMETER --repository $REPOSITORY_NAME \
-    --repository-type tfsgit --branch master --skip-first-run \
-    --yml-path pipelines/azure-pipelines.load-test.yml
+                                                 --organization $ORGANIZATION \
+                                                 --project $PROJECT \
+                                                 --repository-type tfsgit --branch master --skip-first-run \
+                                                 --yml-path pipelines/azure-pipelines.load-test.yml
 
-az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_JMX_FILE --allow-override
-az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_WORKERS_COUNT --allow-override
+az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_JMX_FILE --allow-override --organization $ORGANIZATION --project $PROJECT
+az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_WORKERS_COUNT --allow-override --organization $ORGANIZATION --project $PROJECT
 ```
 
 ### 7. Update the JMX test definition (optional)
@@ -198,8 +218,11 @@ You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmete
 ```shell
 JMETER_JMX_FILE=sample.jmx
 JMETER_WORKERS_COUNT=1
+ORGANIZATION=https://dev.azure.com/your-organization
+PROJECT=your-project
 
 az pipelines run --name $PIPELINE_NAME_JMETER \
+    --organization $ORGANIZATION --project $PROJECT \
     --variables TF_VAR_JMETER_JMX_FILE=$JMETER_JMX_FILE TF_VAR_JMETER_WORKERS_COUNT=$JMETER_WORKERS_COUNT
 ```
 
