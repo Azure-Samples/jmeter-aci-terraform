@@ -200,7 +200,7 @@ PROJECT=your-project
 az pipelines create --name $PIPELINE_NAME_JMETER --repository $REPOSITORY_NAME \
                                                  --organization $ORGANIZATION \
                                                  --project $PROJECT \
-                                                 --repository-type tfsgit --branch master --skip-first-run \
+                                                 --repository-type tfsgit --branch main --skip-first-run \
                                                  --yml-path pipelines/azure-pipelines.load-test.yml
 
 az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_JMX_FILE --allow-override --organization $ORGANIZATION --project $PROJECT
