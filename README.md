@@ -101,13 +101,13 @@ You can follow the steps described [here](https://www.terraform.io/docs/provider
 
 ### 3. Getting the subscription ID
 
-If you don't know the subscription ID, you can run the following command throug Azure CLI:
+If you don't know the subscription ID, you can run the following command through Azure CLI:
 
 ```sh
 az account show
 ```
 
-It is expected to get the a similar response:
+It is expected to get a similar response:
 
 ```sh
 {
@@ -244,7 +244,7 @@ This sample uses static JMX files on [jmeter](./jmeter/) directory. You can use 
 
 Also, you can dynamically generate JMX files from Swagger/Open API using [swagger-codegen](https://github.com/swagger-api/swagger-codegen) or other similar projects.
 
-Current Terraform template creates a new VNET to host JMeter installation. Instead you can modify the template to deploy agents in an existing VNET or your can apply VNET peering to connect them into an existing infrastructure.
+Current Terraform template creates a new VNET to host JMeter installation. Instead you can modify the template to deploy agents in an existing VNET or you can apply VNET peering to connect them into an existing infrastructure.
 
 ## Limitations
 
