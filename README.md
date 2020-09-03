@@ -104,7 +104,7 @@ az repos import create --git-source-url $REPOSITORY_URL --repository $REPOSITORY
 Create an [Azure service principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals#service-principal-object):
 
 ```shell
-SERVICE_PRINCIPAL_NAME=ServicePrincipalName
+SERVICE_PRINCIPAL_NAME=JMeterServicePrincipal
 
 SERVICE_PRINCIPAL=$(az ad sp create-for-rbac --name $SERVICE_PRINCIPAL_NAME)
 ```
@@ -122,7 +122,7 @@ SUBSCRIPTION_NAME=$(az account show | jq -r .name)
 Create an Azure [service connection](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml) on Azure DevOps:
 
 ```shell
-SERVICE_CONNECTION_NAME=JmeterAzureConnection
+SERVICE_CONNECTION_NAME=JMeterAzureConnection
 
 export AZURE_DEVOPS_EXT_AZURE_RM_SERVICE_PRINCIPAL_KEY=$CLIENT_SECRET
 
@@ -131,7 +131,7 @@ az devops service-endpoint azurerm create  --azure-rm-service-principal-id $CLIE
         --azure-rm-tenant-id $TENANT_ID --name $SERVICE_CONNECTION_NAME
 ```
 
-### 3. Create Variable Groups
+### 3. Create Variable Group
 
 Set the following variables according to your Azure Container Registry instance:
 
@@ -176,18 +176,18 @@ az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR
 
 ### 6. Update the JMX test definition (optional)
 
-By default, this repository uses a `sample.jmx` file under the `jmeter` folder. This JMX file contains a test definition for performing HTTP requests on `azure.microsoft.com` endpoint through the `443` port. You can simply update the it with the test definition of your preference.
+By default the test uses [`sample.jmx`](./jmeter/sample.jmx). This JMX file contains a test definition for performing HTTP requests on `azure.microsoft.com` endpoint through the `443` port. You can simply update the it with the test definition of your preference.
 
 ### 7. Manually Run the JMeter Pipeline
 
-You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmeter/sample.jmx)) and how many JMeter workers you will need for your test. Then you can run the JMeter pipeline using the CLI:
+You can choose the JMeter file you want to run and how many JMeter workers you will need for your test. Then you can run the JMeter pipeline using the CLI:
 
 ```shell
 JMETER_JMX_FILE=sample.jmx
 JMETER_WORKERS_COUNT=1
 
 az pipelines run --name $PIPELINE_NAME_JMETER \
-    --variables TF_VAR_JMETER_JMX_FILE=$JMETER_JMX_FILE TF_VAR_JMETER_WORKERS_COUNT=$JMETER_WORKERS_COUNT
+                 --variables TF_VAR_JMETER_JMX_FILE=$JMETER_JMX_FILE TF_VAR_JMETER_WORKERS_COUNT=$JMETER_WORKERS_COUNT
 ```
 
 Or even use the UI to define variables and Run the pipeline:
