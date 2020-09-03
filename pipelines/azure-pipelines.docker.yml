@@ -17,8 +17,8 @@ steps:
 - task: AzureCLI@2
   displayName: 'Build and Push JMeter Docker image'
   inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: |
-      az acr build -t $(TF_VAR_JMETER_DOCKER_IMAGE) -r $(TF_VAR_JMETER_IMAGE_REGISTRY_NAME) -f $(Build.SourcesDirectory)/docker/Dockerfile $(Build.SourcesDirectory)/docker
+      az acr build -t $(TF_VAR_JMETER_DOCKER_IMAGE) -r $(TF_VAR_JMETER_ACR_NAME) -f $(Build.SourcesDirectory)/docker/Dockerfile $(Build.SourcesDirectory)/docker

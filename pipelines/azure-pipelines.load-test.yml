@@ -12,17 +12,10 @@ variables:
 
 steps:
 
-- task: AzureKeyVault@1
-  inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
-    KeyVaultName: $(TF_VAR_KEY_VAULT_NAME)
-    SecretsFilter: '*'
-  displayName: 'Get secrets from Azure Key Vault'
-
 - task: AzureCLI@2
   displayName: 'SETUP: Validate JMeter Docker Image'
   inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: |
@@ -35,18 +28,27 @@ steps:
       --stats --tree-dump --jmx $(TF_VAR_JMETER_JMX_FILE)
   displayName: 'SETUP: Validate JMX File'
 
+- task: AzureCLI@2
+  displayName: 'SETUP: Prepare Terraform Credentials'
+  inputs:
+    azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
+    scriptType: bash
+    scriptLocation: inlineScript
+    addSpnToEnvironment: true
+    inlineScript: |
+      echo "##vso[task.setvariable variable=ARM_CLIENT_ID]$servicePrincipalId"
+      echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET]$servicePrincipalKey"
+      echo "##vso[task.setvariable variable=ARM_TENANT_ID]$tenantId"
+      echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID]$AZURE_SUBSCRIPTION_ID"
+
+      env
+
 - script: terraform init
   workingDirectory: ./terraform
   displayName: 'SETUP: Run Terraform Init'
 
 - script: terraform apply -target azurerm_storage_share.jmeter_share -auto-approve
   workingDirectory: ./terraform
-  env:
-    ARM_SUBSCRIPTION_ID: $(arm-subscription-id)
-    ARM_TENANT_ID: $(arm-tenant-id)
-    ARM_CLIENT_ID: $(arm-client-id)
-    ARM_CLIENT_SECRET: $(arm-client-secret)
-    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'SETUP: Run Terraform Apply (target=file share)'
 
 - script: |
@@ -60,17 +62,11 @@ steps:
 
 - script: terraform apply -auto-approve
   workingDirectory: ./terraform
-  env:
-    ARM_SUBSCRIPTION_ID: $(arm-subscription-id)
-    ARM_TENANT_ID: $(arm-tenant-id)
-    ARM_CLIENT_ID: $(arm-client-id)
-    ARM_CLIENT_SECRET: $(arm-client-secret)
-    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'SETUP: Run Terraform Apply (target=all)'
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
     workingDirectory: ./terraform
     scriptType: bash
     scriptLocation: inlineScript
@@ -87,7 +83,7 @@ steps:
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
     workingDirectory: ./terraform
     scriptType: bash
     scriptLocation: inlineScript
@@ -99,7 +95,7 @@ steps:
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: $(TF_VAR_SERVICE_CONNECTION_NAME)
+    azureSubscription: $(AZURE_SERVICE_CONNECTION_NAME)
     workingDirectory: ./terraform
     scriptType: bash
     scriptLocation: inlineScript
@@ -132,10 +128,4 @@ steps:
 
 - script: terraform destroy -auto-approve
   workingDirectory: ./terraform
-  env:
-    ARM_SUBSCRIPTION_ID: $(arm-subscription-id)
-    ARM_TENANT_ID: $(arm-tenant-id)
-    ARM_CLIENT_ID: $(arm-client-id)
-    ARM_CLIENT_SECRET: $(arm-client-secret)
-    TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD: $(acr-secret)
   displayName: 'TEARDOWN: Run Terraform Destroy'
