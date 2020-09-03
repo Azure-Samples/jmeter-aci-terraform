@@ -1,0 +1,20 @@
+name: Terraform-CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Run a one-line script
+        run: terraform fmt ./terraform
+
+      - name: HashiCorp - Setup Terraform
+        uses: hashicorp/setup-terraform@v1.1.0
