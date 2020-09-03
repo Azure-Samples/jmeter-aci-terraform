@@ -13,8 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Run a one-line script
-        run: terraform fmt ./terraform
+      - name: Check if the Terraform files are formatted
+        run: terraform fmt -check ./terraform
 
-      - name: HashiCorp - Setup Terraform
-        uses: hashicorp/setup-terraform@v1.1.0
+      - name: Validate Terraform files
+        run: |
+          terraform init ./terraform/
+          terraform validate ./terraform
