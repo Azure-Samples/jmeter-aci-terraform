@@ -16,7 +16,7 @@ urlFragment: "jmeter-aci-terraform"
 
 # Load Testing Pipeline with JMeter, ACI and Terraform
 
-This project is a load testing pipeline that leverages [Apache JMeter](https://jmeter.apache.org/) as an open source load and performance testing tool and [Terraform](https://www.terraform.io/) to dynamically provision and destroy the required infrastructure on Azure. 
+This project is a load testing pipeline that leverages [Apache JMeter](https://jmeter.apache.org/) as an open source load and performance testing tool and [Terraform](https://www.terraform.io/) to dynamically provision and destroy the required infrastructure on Azure.
 
 ## Key concepts
 
@@ -26,7 +26,7 @@ The flow is triggered and controlled by an [Azure Pipeline](https://azure.micros
 
 | Task group              | Tasks  |
 |-------------------------|--------|
-| SETUP | <li>Check if the JMeter Docker image exists</li><li>Validate the JMX file that contains the JMeter test definition</li><li>Upload JMeter JMX file to Azure Storage Account File Share</li><li>Provision the infrastructure with Terraform</li> |
+| SETUP | <li>Retrieve secrets from Azure Key Vault</li><li>Check if the JMeter Docker image exists</li><li>Validate the JMX file that contains the JMeter test definition</li><li>Upload JMeter JMX file to Azure Storage Account File Share</li><li>Provision the infrastructure with Terraform</li> |
 | TEST | <li>Run JMeter test execution and wait for completion</li> |
 | RESULTS | <li>Show JMeter logs</li><li>Get JMeter artifacts (e.g. logs, dashboard)</li><li>Convert JMeter tests result (JTL format) to JUnit format</li><li>Publish JUnit test results to Azure Pipelines</li><li>Publish JMeter artifacts to Azure Pipelines</li> |
 | TEARDOWN | <li>Destroy all ephemeral infrastructure with Terraform</li> |
@@ -60,6 +60,8 @@ On the `RESULTS` phase, a [JMeter Report Dashboard](https://jmeter.apache.org/us
 * [Azure DevOps CLI](https://docs.microsoft.com/en-us/azure/devops/cli/?view=azure-devops)
 * [Service Principal](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?view=azure-cli-latest)
 * [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/)
+* [Azure Service Connection](https://docs.microsoft.com/en-us/azure/devops/pipelines/library/service-endpoints?view=azure-devops&tabs=yaml)
+* [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/)
 * Shell
 * [jq](https://stedolan.github.io/jq/download/)
 
@@ -93,11 +95,11 @@ az repos import create --git-source-url $REPOSITORY_URL --repository $REPOSITORY
 
 ### 2. Creating or reusing a service principal
 
-Azure service principal is an identity created for use with applications, hosted services, and automated tools to access Azure resources. This access is restricted by the roles assigned to the service principal, giving you control over which resources can be accessed and at which level. 
+Azure service principal is an identity created for use with applications, hosted services, and automated tools to access Azure resources. This access is restricted by the roles assigned to the service principal, giving you control over which resources can be accessed and at which level.
 
 Terraform requires a service principal to authenticate to Azure. You can use an existing service principal or create a new one through Azure CLI or Azure Portal.
 
-You can follow the steps described [here](https://www.terraform.io/docs/providers/azurerm/guides/service_principal_client_secret.html#creating-a-service-principal-using-the-azure-cli) to create a service principal using the Azure CLI. Make sure you copied the `appId`, `password` and `tenant` properties. In the next steps, they will be used as `CLIENT_ID`, `CLIENT_SECRET` and `TENANT_ID`, respectively. 
+You can follow the steps described [here](https://www.terraform.io/docs/providers/azurerm/guides/service_principal_client_secret.html#creating-a-service-principal-using-the-azure-cli) to create a service principal using the Azure CLI. Make sure you copied the `appId`, `password` and `tenant` properties. In the next steps, they will be used as `CLIENT_ID`, `CLIENT_SECRET` and `TENANT_ID`, respectively.
 
 ### 3. Getting the subscription ID
 
@@ -123,48 +125,67 @@ It is expected to get a similar response:
 
 Then copy the `id` property value. It will be used in the next step as `SUBSCRIPTION_ID`.
 
-### 4. Create Variable Groups
+### 4. Create Azure Devops Service Connection
 
-Get you service principal, your ACR credentials, and fill the following empty variables. Then, run this block on Bash:
+Fill the following empty variables below and run this block on Bash, there is a prompt for `CLIENT_SECRET` during service connection creation.
+You can assign any service connection name.
 
 ```shell
 CLIENT_ID=
-CLIENT_SECRET=
-TENANT_ID=
 SUBSCRIPTION_ID=
+TENANT_ID=
+SUBSCRIPTION_NAME=
+SERVICE_CONNECTION_NAME=
+
+az devops service-endpoint azurerm create  --azure-rm-service-principal-id ${CLIENT_ID} \
+        --azure-rm-subscription-id ${SUBSCRIPTION_ID}  --azure-rm-subscription-name ${SUBSCRIPTION_NAME}  \
+        --azure-rm-tenant-id ${TENANT_ID} --name ${SERVICE_CONNECTION_NAME}
+```
+
+> NOTE: If a mistake is made in the data provided above, for eg. incorrect service principle ID, 
+>the service connection will still be created. You should always manually verify the connection using Azure Devops 
+>project settings after creation.
+
+### 5. Create Variable Groups
+
+Ensure below steps are complete before creating variable groups on Azure Devops:
+- Azure Service Connection name from the step above
+- Azure key vault name
+- Access policy in Azure key vault to allow Azure service principal used to set up service connection, access to get keys from the vault
+- Set up secrets within the key vault with keys specified below:
+  - SUBSCRIPTION_ID with key arm-subscription-id
+  - TENANT_ID with key arm-tenant-id
+  - CLIENT_ID with key arm-client-id
+  - CLIENT_SECRET with key arm-client-secret
+  - Azure Container Registry password with key acr-secret
+
+Now fill the following empty variables below and run this block on Bash:
+
+```shell
 ACR_NAME=
-ACR_PASSWORD=
+KEY_VAULT_NAME=
+SERVICE_CONNECTION_NAME=
 ```
 
 > Note: Make sure the `ACR_NAME` doesn't contain any capital letter, as it's an invalid ACR name convention.
 
-
-Then run the following commands to create the variable groups `JMETER_AZURE_PRINCIPAL` and `JMETER_TERRAFORM_SETTINGS`:
+Then run the following commands to create the variable group `JMETER_TERRAFORM_SETTINGS`:
 
 ```shell
-PRIN_GROUP_ID=$(az pipelines variable-group create  --name JMETER_AZURE_PRINCIPAL --authorize \
-                                                    --variables ARM_CLIENT_ID=$CLIENT_ID \
-                                                                ARM_TENANT_ID=$TENANT_ID \
-                                                                ARM_SUBSCRIPTION_ID=$SUBSCRIPTION_ID \
-                                                                | jq .id)
-
-az pipelines variable-group variable create --group-id $PRIN_GROUP_ID --secret true \
-                                            --name ARM_CLIENT_SECRET \
-                                            --value $CLIENT_SECRET
 
 SETT_GROUP_ID=$(az pipelines variable-group create  --name JMETER_TERRAFORM_SETTINGS --authorize \
                                                     --variables TF_VAR_JMETER_IMAGE_REGISTRY_NAME=$ACR_NAME \
                                                                 TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME=$ACR_NAME \
                                                                 TF_VAR_JMETER_IMAGE_REGISTRY_SERVER=$ACR_NAME.azurecr.io \
+                                                                TF_VAR_SERVICE_CONNECTION_NAME="$SERVICE_CONNECTION_NAME" \
+                                                                TF_VAR_KEY_VAULT_NAME=$KEY_VAULT_NAME \
                                                                 TF_VAR_JMETER_DOCKER_IMAGE=$ACR_NAME.azurecr.io/jmeter \
                                                                 | jq .id)
 
-az pipelines variable-group variable create --group-id $SETT_GROUP_ID --secret true \
-                                            --name TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD \
-                                            --value $ACR_PASSWORD
+az pipelines variable-group variable create --group-id $SETT_GROUP_ID
 ```
 
-### 5. Create and Run the Docker Pipeline
+### 6. Create and Run the Docker Pipeline
 
 ```shell
 PIPELINE_NAME_DOCKER=jmeter-docker-build
@@ -174,7 +195,7 @@ az pipelines create --name $PIPELINE_NAME_DOCKER --repository $REPOSITORY_NAME \
     --yml-path pipelines/azure-pipelines.docker.yml
 ```
 
-### 6. Create the JMeter Pipeline
+### 7. Create the JMeter Pipeline
 
 ```shell
 PIPELINE_NAME_JMETER=jmeter-load-test
@@ -187,11 +208,11 @@ az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR
 az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_WORKERS_COUNT --allow-override
 ```
 
-### 7. Update the JMX test definition (optional)
+### 8. Update the JMX test definition (optional)
 
 By default, this repository uses a `sample.jmx` file under the `jmeter` folder. This JMX file contains a test definition for performing HTTP requests on `azure.microsoft.com` endpoint through the `443` port. You can simply update the it with the test definition of your preference.
 
-### 8. Manually Run the JMeter Pipeline
+### 9. Manually Run the JMeter Pipeline
 
 You can choose the JMeter file you want to run (e.g. [jmeter/sample.jmx](./jmeter/sample.jmx)) and how many JMeter workers you will need for your test. Then you can run the JMeter pipeline using the CLI:
 
