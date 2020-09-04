@@ -1,6 +1,6 @@
 # JMeter Pipeline Settings
 
-The pipeline uses Terraform 12.x to provision JMeter and its infrastructure on Azure.
+The pipeline uses Terraform 0.13.x to provision JMeter and its infrastructure on Azure.
 
 All environment variables that start with the prefix `TF_VAR` can be used by Terraform to fill the template. According to the [official docs](https://www.terraform.io/docs/commands/environment-variables.html#tf_var_name):
 
