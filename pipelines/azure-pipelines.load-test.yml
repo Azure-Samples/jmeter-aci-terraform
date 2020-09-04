@@ -9,6 +9,8 @@ variables:
   value: $(System.DefaultWorkingDirectory)/jmeter
 - name: JMETER_DIRECTORY_OUTPUT
   value: $(System.DefaultWorkingDirectory)/results
+- name: TERRAFORM_VERSION
+  value: 0.13.2
 
 steps:
 
@@ -40,6 +42,13 @@ steps:
       echo "##vso[task.setvariable variable=ARM_CLIENT_SECRET]$servicePrincipalKey"
       echo "##vso[task.setvariable variable=ARM_TENANT_ID]$tenantId"
       echo "##vso[task.setvariable variable=ARM_SUBSCRIPTION_ID]$AZURE_SUBSCRIPTION_ID"
+
+- script: |
+    wget https://releases.hashicorp.com/terraform/$(TERRAFORM_VERSION)/terraform_$(TERRAFORM_VERSION)_linux_amd64.zip
+    unzip terraform_$(TERRAFORM_VERSION)_linux_amd64.zip
+    sudo mv ./terraform  /usr/local/bin
+  workingDirectory: $(Agent.TempDirectory)
+  displayName: 'SETUP: Install Terraform'
 
 - script: terraform init
   workingDirectory: ./terraform
