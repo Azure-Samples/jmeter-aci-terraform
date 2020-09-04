@@ -126,9 +126,11 @@ SERVICE_CONNECTION_NAME=JMeterAzureConnection
 
 export AZURE_DEVOPS_EXT_AZURE_RM_SERVICE_PRINCIPAL_KEY=$CLIENT_SECRET
 
-az devops service-endpoint azurerm create  --azure-rm-service-principal-id $CLIENT_ID \
-        --azure-rm-subscription-id $SUBSCRIPTION_ID  --azure-rm-subscription-name $SUBSCRIPTION_NAME  \
-        --azure-rm-tenant-id $TENANT_ID --name $SERVICE_CONNECTION_NAME
+SERVICE_ENDPOINT_ID=$(az devops service-endpoint azurerm create --azure-rm-service-principal-id $CLIENT_ID \
+                        --azure-rm-subscription-id $SUBSCRIPTION_ID --azure-rm-subscription-name $SUBSCRIPTION_NAME  \
+                        --azure-rm-tenant-id $TENANT_ID --name $SERVICE_CONNECTION_NAME | jq -r .id)
+
+az devops service-endpoint update --id $SERVICE_ENDPOINT_ID --enable-for-all true
 ```
 
 ### 3. Create Variable Group
