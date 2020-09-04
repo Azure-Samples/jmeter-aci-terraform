@@ -58,17 +58,12 @@ variable "JMETER_DOCKER_PORT" {
   default = 1099
 }
 
-variable "JMETER_IMAGE_REGISTRY_SERVER" {
+variable "JMETER_ACR_NAME" {
   type    = string
   default = ""
 }
 
-variable "JMETER_IMAGE_REGISTRY_USERNAME" {
-  type    = string
-  default = ""
-}
-
-variable "JMETER_IMAGE_REGISTRY_PASSWORD" {
+variable "JMETER_ACR_RESOURCE_GROUP_NAME" {
   type    = string
   default = ""
 }
