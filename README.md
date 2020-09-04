@@ -243,23 +243,11 @@ Please note that for [Microsoft hosted agents](https://docs.microsoft.com/en-us/
 * **ACI on VNET regions**
 Please note that [not all regions](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-virtual-network-concepts#where-to-deploy) currently support ACI and VNET integration. If you need private JMeter agents, you can deploy it in a different region and use VNET peering between them.
 
-## Pricing
-
-It's recommended the [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/) to estimate the monthly costs.
-
-### Example
-
-* 1 Basic Container Registry
-* 1 Standard Storage Account (General Purpose)
-* `N` Container Instance groups running in `M` seconds with `X` vCPUs; where:
-  * `N` is the estimated number of instances in the load test
-  * `M` is the test duration in seconds
-  * `X` is the number of vCPUs for each instance group
-
 ## Additional Documentation
 
 * [Adding plugins to JMeter Docker image](./docs/adding-jmeter-plugins.md)
 * [JMeter pipeline settings](./docs/jmeter-pipeline-settings.md)
+* [Estimating costs](./docs/estimating-costs.md)
 
 ## References
 
