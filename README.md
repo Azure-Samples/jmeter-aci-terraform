@@ -26,7 +26,7 @@ The flow is triggered and controlled by an [Azure Pipeline](https://azure.micros
 
 | Task group              | Tasks  |
 |-------------------------|--------|
-| SETUP | <li>Retrieve secrets from Azure Key Vault</li><li>Check if the JMeter Docker image exists</li><li>Validate the JMX file that contains the JMeter test definition</li><li>Upload JMeter JMX file to Azure Storage Account File Share</li><li>Provision the infrastructure with Terraform</li> |
+| SETUP | <li>Check if the JMeter Docker image exists</li><li>Validate the JMX file that contains the JMeter test definition</li><li>Upload JMeter JMX file to Azure Storage Account File Share</li><li>Provision the infrastructure with Terraform</li> |
 | TEST | <li>Run JMeter test execution and wait for completion</li> |
 | RESULTS | <li>Show JMeter logs</li><li>Get JMeter artifacts (e.g. logs, dashboard)</li><li>Convert JMeter tests result (JTL format) to JUnit format</li><li>Publish JUnit test results to Azure Pipelines</li><li>Publish JMeter artifacts to Azure Pipelines</li> |
 | TEARDOWN | <li>Destroy all ephemeral infrastructure with Terraform</li> |
@@ -241,7 +241,7 @@ Current Terraform template creates a new VNET to host JMeter installation. Inste
 Please note that for [Microsoft hosted agents](https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops#capabilities-and-limitations), you can have pipelines that runs up to 1 hour (private project) or 6 hours (public project). You can have your own agents to bypass this limitation.
 
 * **ACI on VNET regions**
-Please note that [not all regions](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-vnet#virtual-network-deployment-limitations) currently support ACI and VNET integration. If you need private JMeter agents, you can deploy it in a different region and use VNET peering between them.
+Please note that [not all regions](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-virtual-network-concepts#where-to-deploy) currently support ACI and VNET integration. If you need private JMeter agents, you can deploy it in a different region and use VNET peering between them.
 
 ## Pricing
 
