@@ -28,9 +28,9 @@ All the other variables can be set on a library group called `JMETER_TERRAFORM_S
 | TF_VAR_JMETER_CONTROLLER_MEMORY       | JMETER_CONTROLLER_MEMORY       |         8.0         |
 | TF_VAR_JMETER_DOCKER_IMAGE            | JMETER_DOCKER_IMAGE            | justb4/jmeter:5.1.1 |
 | TF_VAR_JMETER_DOCKER_PORT             | JMETER_DOCKER_PORT             |         1099        |
-| TF_VAR_JMETER_IMAGE_REGISTRY_SERVER   | JMETER_IMAGE_REGISTRY_SERVER   |                     |
-| TF_VAR_JMETER_IMAGE_REGISTRY_USERNAME | JMETER_IMAGE_REGISTRY_USERNAME |                     |
-| TF_VAR_JMETER_IMAGE_REGISTRY_PASSWORD | JMETER_IMAGE_REGISTRY_PASSWORD |                     |
+| TF_VAR_JMETER_ACR_NAME                | JMETER_ACR_NAME                |                     |
+| TF_VAR_JMETER_ACR_RESOURCE_GROUP_NAME | JMETER_ACR_RESOURCE_GROUP_NAME |                     |
 | TF_VAR_JMETER_STORAGE_QUOTA_GIGABYTES | JMETER_STORAGE_QUOTA_GIGABYTES |          1          |
 | TF_VAR_JMETER_RESULTS_FILE            | JMETER_RESULTS_FILE            |     results.jtl     |
 | TF_VAR_JMETER_DASHBOARD_FOLDER        | JMETER_DASHBOARD_FOLDER        |      dashboard      |
+| TF_VAR_JMETER_EXTRA_CLI_ARGUMENTS     | JMETER_EXTRA_CLI_ARGUMENTS     |                     |

@@ -92,3 +92,8 @@ variable "JMETER_DASHBOARD_FOLDER" {
   type    = string
   default = "dashboard"
 }
+
+variable "JMETER_EXTRA_CLI_ARGUMENTS" {
+  type    = string
+  default = ""
+}
