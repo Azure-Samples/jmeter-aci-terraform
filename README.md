@@ -133,7 +133,7 @@ SERVICE_ENDPOINT_ID=$(az devops service-endpoint azurerm create --azure-rm-servi
 az devops service-endpoint update --id $SERVICE_ENDPOINT_ID --enable-for-all true
 ```
 
-### 3. Create Variable Group
+### 3. Creating the Variable Group
 
 Set the following variables according to your Azure Container Registry instance:
 
@@ -153,7 +153,7 @@ az pipelines variable-group create  --name JMETER_TERRAFORM_SETTINGS --authorize
                                                 AZURE_SUBSCRIPTION_ID=$SUBSCRIPTION_ID
 ```
 
-### 4. Create and Run the Docker Pipeline
+### 4. Creating and Running the Docker Pipeline
 
 ```shell
 PIPELINE_NAME_DOCKER=jmeter-docker-build
@@ -163,7 +163,7 @@ az pipelines create --name $PIPELINE_NAME_DOCKER --repository $REPOSITORY_NAME \
     --yml-path pipelines/azure-pipelines.docker.yml
 ```
 
-### 5. Create the JMeter Pipeline
+### 5. Creating the JMeter Pipeline
 
 ```shell
 PIPELINE_NAME_JMETER=jmeter-load-test
@@ -176,11 +176,11 @@ az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR
 az pipelines variable create --pipeline-name $PIPELINE_NAME_JMETER --name TF_VAR_JMETER_WORKERS_COUNT --allow-override
 ```
 
-### 6. Update the JMX test definition (optional)
+### 6. Updating the JMX test definition (optional)
 
 By default the test uses [`sample.jmx`](./jmeter/sample.jmx). This JMX file contains a test definition for performing HTTP requests on `azure.microsoft.com` endpoint through the `443` port. You can simply update the it with the test definition of your preference.
 
-### 7. Manually Run the JMeter Pipeline
+### 7. Manually Running the JMeter Pipeline
 
 You can choose the JMeter file you want to run and how many JMeter workers you will need for your test. Then you can run the JMeter pipeline using the CLI:
 
