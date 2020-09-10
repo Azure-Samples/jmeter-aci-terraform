@@ -43,17 +43,6 @@ The infrastructure provisioned by Terraform includes:
 
 On the `RESULTS` phase, a [JMeter Report Dashboard](https://jmeter.apache.org/usermanual/generating-dashboard.html) and [Tests Results](https://docs.microsoft.com/en-us/azure/devops/pipelines/test/review-continuous-test-results-after-build?view=azure-devops) are published in the end of each load testing execution.
 
-## Repository structure
-
-| Folder    | Description                                    |
-|-----------|------------------------------------------------|
-| docker    | JMeter custom image                            |
-| docs      | Documentation and images                       |
-| jmeter    | Contains JMX files used by JMeter agents       |
-| pipelines | Docker and JMeter pipeline definitions         |
-| scripts   | Scripts that support pipeline execution        |
-| terraform | Terraform template for infrastructure creation |
-
 ## Prerequisites
 
 You should have the following tools installed:
@@ -222,46 +211,23 @@ After downloading the dashboard and unzipping it, open `dashboard/index.html` on
 
 All Terraform parameters can be configured using the Variable Group `JMETER_TERRAFORM_SETTINGS`. Please read [JMeter Pipeline Settings](./docs/jmeter-pipeline-settings.md) to know more details about it.
 
-## Implementation Notes
-
-This sample only shows how to manually trigger a JMeter Pipeline. You can easily adapt its content and incorporate it on other pipelines, apply continuous integration or other improvements.
-
-This sample uses static JMX files on [jmeter](./jmeter/) directory. You can use many techniques to parameterize JMX files. Some of them are:
-* [CSV files](https://guide.blazemeter.com/hc/en-us/articles/206733689-Using-CSV-DATA-SET-CONFIG)
-* [Properties](http://jmeter.apache.org/usermanual/functions.html#__P)
-* [Environment Variables](https://jmeter-plugins.org/wiki/Functions/#envsupfont-color-gray-size-1-since-1-2-0-font-sup)
-
-Also, you can dynamically generate JMX files from Swagger/Open API using [swagger-codegen](https://github.com/swagger-api/swagger-codegen) or other similar projects.
-
-Current Terraform template creates a new VNET to host JMeter installation. Instead you can modify the template to deploy agents in an existing VNET or you can apply VNET peering to connect them into an existing infrastructure.
-
 ## Limitations
 
 * **Load Test duration**
 Please note that for [Microsoft hosted agents](https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops#capabilities-and-limitations), you can have pipelines that runs up to 1 hour (private project) or 6 hours (public project). You can have your own agents to bypass this limitation.
 
 * **ACI on VNET regions**
-Please note that [not all regions](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-virtual-network-concepts#where-to-deploy) currently support ACI and VNET integration. If you need private JMeter agents, you can deploy it in a different region and use VNET peering between them.
-
-## Pricing
-
-It's recommended the [Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/) to estimate the monthly costs.
-
-### Example
-
-* 1 Basic Container Registry
-* 1 Standard Storage Account (General Purpose)
-* `N` Container Instance groups running in `M` seconds with `X` vCPUs; where:
-  * `N` is the estimated number of instances in the load test
-  * `M` is the test duration in seconds
-  * `X` is the number of vCPUs for each instance group
+Please note that [not all regions](https://docs.microsoft.com/en-us/azure/container-instances/container-instances-virtual-network-concepts#where-to-deploy) currently support ACI and VNET integration. If you need private JMeter agents, you can deploy it in a different region and use VNET peering between them. Also note that vCPUs and memory limits change based on regions.
 
 ## Additional Documentation
 
+* [Implementation Notes](./docs/implementation-notes.md)
 * [Adding plugins to JMeter Docker image](./docs/adding-jmeter-plugins.md)
 * [JMeter pipeline settings](./docs/jmeter-pipeline-settings.md)
+* [Estimating costs](./docs/estimating-costs.md)
+* [Integrating with Application Insights](./docs/integrating-application-insights.md)
 
-## References
+## External References
 
 * [User Manual: Remote Testing](https://jmeter.apache.org/usermanual/remote-test.html)
 * [User Manual: Apache JMeter Distributed Testing Step-by-step](https://jmeter.apache.org/usermanual/jmeter_distributed_testing_step_by_step.html)
