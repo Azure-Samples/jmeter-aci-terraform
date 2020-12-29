@@ -55,7 +55,7 @@ You should have the following tools installed:
 You should have the following Azure resources:
 
 * [Azure DevOps Project](https://docs.microsoft.com/en-us/azure/devops/organizations/projects/create-project?view=azure-devops&tabs=preview-page)
-* [Azure Container Registry (ACR)](https://azure.microsoft.com/en-us/services/container-registry/)
+* [Azure Container Registry (ACR)](https://azure.microsoft.com/en-us/services/container-registry/) with Admin user enabled
 
 ## Getting Started
 
