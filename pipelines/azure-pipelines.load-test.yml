@@ -59,10 +59,11 @@ steps:
   displayName: 'SETUP: Run Terraform Apply (target=file share)'
 
 - script: |
-    azcopy \
-    --source $(JMETER_DIRECTORY_INPUT) \
-    --destination $(terraform output storage_file_share_url) \
-    --dest-key $(terraform output storage_account_key) \
+    SAS_END=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ'` && \
+    JMETER_SAS=`az storage share generate-sas -n jmeter --account-name $(terraform output storage_account_name) --account-key $(terraform output storage_account_key) --https-only --permissions dlrw --expiry $SAS_END -o tsv` && \
+    azcopy cp \
+    "$(JMETER_DIRECTORY_INPUT)/*.jmx" \
+    $(terraform output storage_file_share_url)?$JMETER_SAS \
     --recursive
   workingDirectory: ./terraform
   displayName: 'SETUP: Transfer JMeter Files to Storage Account'
@@ -107,15 +108,16 @@ steps:
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: |
-      azcopy \
-        --source $(terraform output storage_file_share_url) \
-        --destination $(JMETER_DIRECTORY_OUTPUT) \
-        --source-key $(terraform output storage_account_key) \
-        --recursive
+       SAS_END=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ'` && \
+       JMETER_SAS=`az storage share generate-sas -n jmeter --account-name $(terraform output storage_account_name) --account-key $(terraform output storage_account_key) --https-only --permissions dlrw --expiry $SAS_END -o tsv` && \
+       azcopy cp \
+         $(terraform output storage_file_share_url)?$JMETER_SAS \
+         "$(JMETER_DIRECTORY_OUTPUT)" \
+         --recursive
   displayName: 'RESULTS: Get JMeter Artifacts'
 
 - script: |
-    JMETER_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/$(terraform output jmeter_results_file)
+    JMETER_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/jmeter/$(terraform output jmeter_results_file)
     JUNIT_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/output.xml
     python3 ../scripts/jtl_junit_converter.py $JMETER_RESULTS $JUNIT_RESULTS
   workingDirectory: ./terraform
