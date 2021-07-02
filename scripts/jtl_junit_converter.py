@@ -48,14 +48,14 @@ def create_test_case_attrib(request_attrib):
 		'time': request_attrib['time']
 }
 
-def create_test_suite_attrib(junit_results):
+def create_test_suite_attrib(junit_results, test_name):
 	"""Returns a JSON with attributes for JUnit testsuite: https://llg.cubic.org/docs/junit/
 	The JMeter JTL file must be in CSV format.
 	"""
 	return {
 		'id': '1',
-		'name': 'load test',
-		'package': 'load test',
+		'name': test_name,
+		'package': test_name,
 		'hostname': 'Azure DevOps',
 		'time': str(junit_results['time']),
 		'tests': str(junit_results['tests']),
@@ -119,11 +119,11 @@ def create_properties(test_suite):
 	"""
 	return SubElement(test_suite, 'properties')
 
-def create_test_suite(test_suites, junit_results):
+def create_test_suite(test_suites, junit_results, test_name):
 	"""Creates a JUnit testsuite: https://llg.cubic.org/docs/junit/
 	The JMeter JTL file must be in CSV format.
 	"""
-	test_suite_attrib = create_test_suite_attrib(junit_results)
+	test_suite_attrib = create_test_suite_attrib(junit_results, test_name)
 	test_suite = SubElement(test_suites, 'testsuite', test_suite_attrib)
 
 	create_properties(test_suite)
@@ -156,24 +156,27 @@ def create_successful_test_case(test_suite, successful_request):
 	test_case_attrib = create_test_case_attrib(successful_request)
 	test_case = SubElement(test_suite, 'testcase', test_case_attrib)
 
-def create_test_suites(jtl_results_filename):
+def create_test_suites(jtl_results_filename, test_name):
 	"""Creates a JUnit testsuites element: https://llg.cubic.org/docs/junit/
 	The JMeter JTL file must be in CSV format.
 	"""
 	test_suites = Element('testsuites')
 	junit_results = create_junit_results(jtl_results_filename)
-	create_test_suite(test_suites, junit_results)
+	create_test_suite(test_suites, junit_results, test_name)
 
 	return prettify(test_suites)
 
 def main():
-  print('Converting...')
-  
-  with open(sys.argv[2], "w") as output_file:
-    test_suites = create_test_suites(sys.argv[1])
-    output_file.write(test_suites)
+	print('Converting...') 
+	test_name = 'load test'
+	if len(sys.argv) > 3:
+		test_name = sys.argv[3]
+    
+	with open(sys.argv[2], "w") as output_file:
+		test_suites = create_test_suites(sys.argv[1], test_name)
+		output_file.write(test_suites)
 
-  print('Done!')
+	print('Done!')
     
 if __name__ == '__main__':
 	main()
