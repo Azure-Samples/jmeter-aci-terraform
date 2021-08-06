@@ -1,8 +1,6 @@
 name: Terraform-CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -17,6 +15,7 @@ jobs:
         run: terraform fmt -check ./terraform
 
       - name: Validate Terraform files
+        working-directory: ./terraform
         run: |
-          terraform init ./terraform/
-          terraform validate ./terraform
+          terraform init
+          terraform validate
