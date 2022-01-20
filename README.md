@@ -14,6 +14,8 @@ description: "Azure Pipeline that provisions JMeter on Azure Container Instance 
 urlFragment: "jmeter-aci-terraform"
 ---
 
+# ATTENTION: This project was archived. Please consider using [Azure Load Testing service](https://azure.microsoft.com/en-us/services/load-testing/). 
+
 # Load Testing Pipeline with JMeter, ACI and Terraform
 
 This project is a load testing pipeline that leverages [Apache JMeter](https://jmeter.apache.org/) as an open source load and performance testing tool and [Terraform](https://www.terraform.io/) to dynamically provision and destroy the required infrastructure on Azure.
