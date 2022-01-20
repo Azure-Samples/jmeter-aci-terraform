@@ -1,7 +1,7 @@
 trigger: none
 
 pool:
-  vmImage: 'ubuntu-18.04'
+  vmImage: 'ubuntu-latest'
 
 variables:
 - group: JMETER_TERRAFORM_SETTINGS
@@ -10,7 +10,7 @@ variables:
 - name: JMETER_DIRECTORY_OUTPUT
   value: $(System.DefaultWorkingDirectory)/results
 - name: TERRAFORM_VERSION
-  value: 0.13.2
+  value: 1.1.3
 
 steps:
 
@@ -60,10 +60,10 @@ steps:
 
 - script: |
     SAS_END=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ'` && \
-    JMETER_SAS=`az storage share generate-sas -n jmeter --account-name $(terraform output storage_account_name) --account-key $(terraform output storage_account_key) --https-only --permissions dlrw --expiry $SAS_END -o tsv` && \
+    JMETER_SAS=`az storage share generate-sas -n jmeter --account-name $(terraform output --raw storage_account_name) --account-key $(terraform output --raw storage_account_key) --https-only --permissions dlrw --expiry $SAS_END -o tsv` && \
     azcopy cp \
     "$(JMETER_DIRECTORY_INPUT)/*.jmx" \
-    $(terraform output storage_file_share_url)?$JMETER_SAS \
+    $(terraform output --raw storage_file_share_url)?$JMETER_SAS \
     --recursive
   workingDirectory: ./terraform
   displayName: 'SETUP: Transfer JMeter Files to Storage Account'
@@ -79,8 +79,8 @@ steps:
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: |
-      RG=$(terraform output resource_group_name)
-      NAME=$(terraform output jmeter_controller_name)
+      RG=$(terraform output --raw resource_group_name)
+      NAME=$(terraform output --raw jmeter_controller_name)
       echo "`date`: Started!"
       while [ $(az container show -g $RG -n $NAME --query "containers[0].instanceView.currentState.state" -o tsv) == "Running" ]; do
         echo "`date`: Still Running..."
@@ -96,9 +96,9 @@ steps:
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: |
-      az container logs -g $(terraform output resource_group_name) -n $(terraform output jmeter_controller_name)
-      RESOURCE_GROUP=$(terraform output resource_group_name)
-      echo -n $(terraform output jmeter_workers_names) | xargs -t -d "," -I '{}' -n1 az container logs -g $RESOURCE_GROUP -n {}
+      az container logs -g $(terraform output --raw resource_group_name) -n $(terraform output --raw jmeter_controller_name)
+      RESOURCE_GROUP=$(terraform output --raw resource_group_name)
+      echo -n $(terraform output --raw jmeter_workers_names) | xargs -t -d "," -I '{}' -n1 az container logs -g $RESOURCE_GROUP -n {}
   displayName: 'RESULTS: Collect JMeter Controller and Worker Logs'
 
 - task: AzureCLI@2
@@ -109,15 +109,15 @@ steps:
     scriptLocation: inlineScript
     inlineScript: |
        SAS_END=`date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ'` && \
-       JMETER_SAS=`az storage share generate-sas -n jmeter --account-name $(terraform output storage_account_name) --account-key $(terraform output storage_account_key) --https-only --permissions dlrw --expiry $SAS_END -o tsv` && \
+       JMETER_SAS=`az storage share generate-sas -n jmeter --account-name $(terraform output --raw storage_account_name) --account-key $(terraform output --raw storage_account_key) --https-only --permissions dlrw --expiry $SAS_END -o tsv` && \
        azcopy cp \
-         $(terraform output storage_file_share_url)?$JMETER_SAS \
+         $(terraform output --raw storage_file_share_url)?$JMETER_SAS \
          "$(JMETER_DIRECTORY_OUTPUT)" \
          --recursive
   displayName: 'RESULTS: Get JMeter Artifacts'
 
 - script: |
-    JMETER_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/jmeter/$(terraform output jmeter_results_file)
+    JMETER_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/jmeter/$(terraform output --raw jmeter_results_file)
     JUNIT_RESULTS=$(JMETER_DIRECTORY_OUTPUT)/output.xml
     python3 ../scripts/jtl_junit_converter.py $JMETER_RESULTS $JUNIT_RESULTS
   workingDirectory: ./terraform
